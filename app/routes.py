@@ -5,6 +5,7 @@ from pydantic import ValidationError
 from app import db
 from app.models import Assessment, Metric, IndicatorScore, Result
 from app.schemas import AssessmentAnalyzeRequest
+from app.mapping import map_metrics_to_indicators
 
 api_bp = Blueprint("api", __name__)
 
@@ -43,16 +44,10 @@ def analyze_assessment():
         )
         db.session.add(db_metric)
 
-    # 3. Dummy indicator mapping for skeleton version.
-    # This is temporary until building the real mapping layer
-    dummy_indicators = [
-        {"dimensions": "R", "indicator": "R1", "value": 2},
-        {"dimensions": "P", "indicator": "P1", "value": 2},
-        {"dimensions": "T", "indicator": "T1", "value": 2},
-        {"dimensions": "A", "indicator": "A1", "value": 1},
-    ]
+    # 3. Indicator mapping
+    mapped_indicators = map_metrics_to_indicators(payload.metrics)
 
-    for item in dummy_indicators:
+    for item in mapped_indicators:
         db.session.add(
             IndicatorScore(
                 assessment_id=assessment.id,
