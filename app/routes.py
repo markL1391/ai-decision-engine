@@ -1,11 +1,13 @@
 import json
 from flask import Blueprint, jsonify, request
 from pydantic import ValidationError
+from sqlalchemy.dialects.oracle.dictionary import dictionary_meta
 
 from app import db
 from app.models import Assessment, Metric, IndicatorScore, Result
 from app.schemas import AssessmentAnalyzeRequest
 from app.mapping import map_metrics_to_indicators
+from app.engine import run_deterministic_engine
 
 api_bp = Blueprint("api", __name__)
 
@@ -46,6 +48,10 @@ def analyze_assessment():
 
     # 3. Indicator mapping
     mapped_indicators = map_metrics_to_indicators(payload.metrics)
+    engine_result = run_deterministic_engine(
+        mapped_indicators,
+        payload.assessment.target_level
+    )
 
     for item in mapped_indicators:
         db.session.add(
@@ -57,18 +63,18 @@ def analyze_assessment():
             )
         )
 
-    # 4. Dummy result for skeleton version
+    # 4. Result
     result = Result(
         assessment_id=assessment.id,
-        r_score=2.0,
-        p_score=2.0,
-        t_score=2.0,
-        a_score=1.0,
-        overall_readiness=1.0,
-        bottlenecks_json=json.dumps(["A"]),
-        transition_feasible=False,
-        transition_risk="high",
-        required_changes_json=json.dumps({"A": ["A1", "A2"]}),
+        r_score=engine_result["dimension_scores"].get("R", 0),
+        p_score=engine_result["dimension_scores"].get("P", 0),
+        t_score=engine_result["dimension_scores"].get("T", 0),
+        a_score=engine_result["dimension_scores"].get("A", 0),
+        overall_readiness=engine_result["overall_readiness"],
+        bottlenecks_json=json.dumps(engine_result["bottlenecks"]),
+        transition_feasible=engine_result["transition_feasible"],
+        transition_risk=engine_result["transition_risk"],
+        required_changes_json=json.dumps(engine_result["result_changes"]),
     )
     db.session.add(result)
 
