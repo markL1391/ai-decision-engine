@@ -58,8 +58,8 @@ def analyze_assessment():
         db.session.add(
             IndicatorScore(
                 assessment_id=assessment.id,
-                dimension=item["dimensions"],
-                dummy_indicators=item["indicator"],
+                dimension=item["dimension"],
+                indicator=item["indicator"],
                 value=item["value"],
             )
         )
@@ -75,7 +75,7 @@ def analyze_assessment():
         bottlenecks_json=json.dumps(engine_result["bottlenecks"]),
         transition_feasible=engine_result["transition_feasible"],
         transition_risk=engine_result["transition_risk"],
-        required_changes_json=json.dumps(engine_result["result_changes"]),
+        required_changes_json=json.dumps(engine_result["required_changes"]),
     )
     db.session.add(result)
 
@@ -163,6 +163,7 @@ def generate_explanation():
         },
         "overall_readiness": assessment.result.overall_readiness,
         "bottlenecks": json.loads(assessment.result.bottlenecks_json),
+        "transition_feasible": assessment.result.transition_feasible,
         "transition_risk": assessment.result.transition_risk,
         "required_changes": json.loads(assessment.result.required_changes_json),
     }
@@ -198,12 +199,12 @@ def generate_explanation():
         "prompt_preview": prompt,
         "explanation": {
             "why_limit": explanation_data["why_limit"],
-            "blocks_transisition": explanation_data["blocks_transition"],
+            "blocks_transition": explanation_data["blocks_transition"],
             "references": explanation_data["references"],
         }
     }),200
 
-@api_bp.route("/assesments/compare", methods=["POST"])
+@api_bp.route("/assessments/compare", methods=["POST"])
 def compare_assessments():
     data = request.get_json(silent=True)
 

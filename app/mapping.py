@@ -29,7 +29,7 @@ def score_process_standardization(value: str) -> int:
 
     mapping = {
         "low": 0,
-        "meidum": 1,
+        "medium": 1,
         "high": 2,
         "fully_standardized": 3,
         "fully standardized": 3,
@@ -54,7 +54,7 @@ def score_ownership_definition(value: str) -> int:
     mapping = {
         "none": 0,
         "informal": 1,
-        "formal": 0,
+        "formal": 2,
         "enforced": 3,
     }
     return mapping.get(normalized, 0)
@@ -62,7 +62,7 @@ def score_ownership_definition(value: str) -> int:
 def map_single_metric(name: str, value: Any) -> List[Dict[str, Any]]:
     """
     Maps a single KPI to one or more indicators.
-    Returns a list bacuase one metric could theoretically affect multiple indicators.
+    Returns a list because one metric could theoretically affect multiple indicators.
     """
     indicators: List[Dict[str, Any]] = []
 
@@ -117,7 +117,7 @@ def map_single_metric(name: str, value: Any) -> List[Dict[str, Any]]:
     elif name == "ownership_definition":
         indicators.append({
             "dimension": "R",
-            "indicators": "R2",
+            "indicator": "R2",
             "value": score_ownership_definition(str(value)),
             "source_metric": name,
         })
@@ -147,7 +147,7 @@ def map_single_metric(name: str, value: Any) -> List[Dict[str, Any]]:
         }
         indicators.append({
             "dimension": "A",
-            "indicators": "A1",
+            "indicator": "A1",
             "value": mapping.get(str(value).strip().lower(), 0),
             "source_metric": name,
         })

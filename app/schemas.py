@@ -8,8 +8,8 @@ class AssessmentMeta(BaseModel):
 
 class MetricInput(BaseModel):
     name: str
-    value: float
-    unit: str
+    value: float | str
+    unit: Optional[str] = None
 
 class AssessmentAnalyzeRequest(BaseModel):
     assessment: AssessmentMeta

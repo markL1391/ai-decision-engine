@@ -27,7 +27,7 @@ def check_transition_feasibility(scores: Dict[str, float], target_level: int) ->
     return all(score >= target_level for score in scores.values())
 
 def calculate_transition_risk(scores: Dict[str, float], target_level: int) -> str:
-    gaps = [target_levelk - s for s in scores.values() if s < target_level]
+    gaps = [target_level - s for s in scores.values() if s < target_level]
 
     if not gaps:
         return "low"
@@ -52,14 +52,12 @@ def build_required_changes(indicators: List[Dict[str, Any]], target_level: int) 
 
 def run_deterministic_engine(indicators: List[Dict[str, Any]], target_level: int) -> Dict[str, Any]:
 
+    scores = calculate_dimension_scores(indicators)
+
     overall = calculate_overall_readiness(scores)
-
     bottlenecks = identify_bottlenecks(scores)
-
     feasible = check_transition_feasibility(scores, target_level)
-
     risk = calculate_transition_risk(scores, target_level)
-
     required_changes = build_required_changes(indicators, target_level)
 
     return {

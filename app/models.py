@@ -20,8 +20,8 @@ class Metric(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     assessment_id = db.Column(db.Integer, db.ForeignKey("assessments.id"), nullable=False)
     name= db.Column(db.String(100), nullable=False)
-    value = db.Column(db.Float, nullable=False)
-    unit = db.Column(db.String(50), nullable=False)
+    value = db.Column(db.String, nullable=False)
+    unit = db.Column(db.String(50), nullable=True)
 
 class IndicatorScore(db.Model):
     __tablename__ = "indicator_scores"
@@ -41,6 +41,7 @@ class Result(db.Model):
     r_score = db.Column(db.Float, nullable=False)
     p_score = db.Column(db.Float, nullable=False)
     t_score = db.Column(db.Float, nullable=False)
+    a_score = db.Column(db.Float, nullable=False)
     overall_readiness = db.Column(db.Float, nullable=False)
 
     bottlenecks_json = db.Column(db.Text, nullable=False)
