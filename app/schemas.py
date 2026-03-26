@@ -21,3 +21,10 @@ class HealthResponse(BaseModel):
 class AssessmentAnalyzeResponse(BaseModel):
     message: str
     assessment_id: int
+
+class ExplanationGenerateRequest(BaseModel):
+    assessment_id: int
+
+class CompareAssessmentsRequest(BaseModel):
+    assessment_a_id: int
+    assessment_b_id: int

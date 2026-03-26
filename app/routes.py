@@ -1,13 +1,14 @@
 import json
 from flask import Blueprint, jsonify, request
 from pydantic import ValidationError
-from sqlalchemy.dialects.oracle.dictionary import dictionary_meta
 
 from app import db
-from app.models import Assessment, Metric, IndicatorScore, Result
-from app.schemas import AssessmentAnalyzeRequest
+from app.models import Assessment, Metric, IndicatorScore, Result, Explanation
+from app.schemas import AssessmentAnalyzeRequest, ExplanationGenerateRequest, CompareAssessmentsRequest
 from app.mapping import map_metrics_to_indicators
 from app.engine import run_deterministic_engine
+from app.rag import retrieve_context
+from app.llm import build_prompt, generate_explanation_mock
 
 api_bp = Blueprint("api", __name__)
 
@@ -132,4 +133,111 @@ def get_assessment(assessment_id: int):
         "metrics": metrics,
         "indicator_scores": indicators,
         "results": result,
+    }), 200
+
+@api_bp.route("/explanations/generate", methods=["POST"])
+def generate_explanation():
+    data = request.get_json(silent=True)
+
+    if not data:
+        return jsonify({"error": "Invalid or missing JSON body"}), 400
+
+    try:
+        payload = ExplanationGenerateRequest(**data)
+    except ValidationError as e:
+        return jsonify({"error": "Validation failed", "details": e.errors()}), 422
+
+    assessment = Assessment.query.get(payload.assessment_id)
+    if not assessment:
+        return jsonify({"error": "Assessment not found"}), 404
+
+    if not assessment.result:
+        return jsonify({"error": "No deterministic result found for assessment"}), 404
+
+    engine_result = {
+        "dimension_scores": {
+            "R": assessment.result.r_score,
+            "P": assessment.result.p_score,
+            "T": assessment.result.t_score,
+            "A": assessment.result.a_score,
+        },
+        "overall_readiness": assessment.result.overall_readiness,
+        "bottlenecks": json.loads(assessment.result.bottlenecks_json),
+        "transition_risk": assessment.result.transition_risk,
+        "required_changes": json.loads(assessment.result.required_changes_json),
+    }
+
+    retrieved_context = retrieve_context(engine_result)
+    prompt = build_prompt(engine_result, retrieved_context)
+
+    explanation_data = generate_explanation_mock(engine_result, retrieved_context)
+
+    existing = Explanation.query.filter_by(assessment_id=assessment.id).first()
+
+    if existing:
+        existing.why_limit_json = json.dumps(explanation_data["why_limit"])
+        existing.blocks_transition_json = json.dumps(explanation_data["blocks_transition"])
+        existing.references_json = json.dumps(explanation_data["references"])
+        existing.model_name = explanation_data["model_name"]
+        existing.prompt_version = explanation_data["prompt_version"]
+    else:
+        explanation = Explanation(
+            assessment_id=assessment.id,
+            why_limit_json=json.dumps(explanation_data["why_limit"]),
+            blocks_transition_json=json.dumps(explanation_data["blocks_transition"]),
+            references_json=json.dumps(explanation_data["references"]),
+            model_name=explanation_data["model_name"],
+            prompt_version=explanation_data["prompt_version"],
+        )
+        db.session.add(explanation)
+
+    db.session.commit()
+
+    return jsonify({
+        "assessment_id": assessment.id,
+        "prompt_preview": prompt,
+        "explanation": {
+            "why_limit": explanation_data["why_limit"],
+            "blocks_transisition": explanation_data["blocks_transition"],
+            "references": explanation_data["references"],
+        }
+    }),200
+
+@api_bp.route("/assesments/compare", methods=["POST"])
+def compare_assessments():
+    data = request.get_json(silent=True)
+
+    if not data:
+        return jsonify({"error": "Invalid or missing JSON body"}), 400
+
+    try:
+        payload = CompareAssessmentsRequest(**data)
+    except ValidationError as e:
+        return jsonify({"error": "Validation failed", "details": e.errors()}), 422
+
+    a = Assessment.query.get(payload.assessment_a_id)
+    b = Assessment.query.get(payload.assessment_b_id)
+
+    if not a or not b:
+        return jsonify({"error": "One or both assessments not found"}), 404
+
+    if not a.result or not b.result:
+        return jsonify({"error": "One or both assessments have no results."}), 404
+
+    comparison = {
+        "r_delta": round(b.result.r_score - a.result.r_score, 2),
+        "p_delta": round(b.result.p_score - a.result.p_score, 2),
+        "t_delta": round(b.result.t_score - a.result.t_score, 2),
+        "a_delta": round(b.result.a_score - a.result.a_score, 2),
+        "overall_readiness_delta": round(b.result.overall_readiness - a.result.overall_readiness, 2),
+        "bottleneck_a": json.loads(a.result.bottlenecks_json),
+        "bottleneck_b": json.loads(b.result.bottlenecks_json),
+        "transition_feasible_a": a.result.transition_feasible,
+        "transition_feasible_b": b.result.transition_feasible,
+    }
+
+    return jsonify({
+        "assessment_a_id": a.id,
+        "assessment_b_id": b.id,
+        "comparison": comparison
     }), 200
