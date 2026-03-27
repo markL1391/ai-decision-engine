@@ -7,3 +7,4 @@ class Config:
     SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(INSTANCE_DIR, 'app.db')}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key")
+    OPENAI_API_KEY = os.getenv("OPEN_API_KEY")

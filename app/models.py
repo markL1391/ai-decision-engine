@@ -1,4 +1,8 @@
 from datetime import datetime
+from email.policy import default
+
+from sqlalchemy import nullsfirst
+
 from app import db
 
 class Assessment(db.Model):
@@ -60,3 +64,12 @@ class Explanation(db.Model):
     references_json = db.Column(db.String(100), nullable=True)
     model_name = db.Column(db.String(100), nullable=True)
     prompt_version = db.Column(db.String(50), nullable=True)
+
+class ConversationTurn(db.Model):
+    __tablename__ = "conversation_turns"
+
+    id = db.Column(db.Integer, primary_key=True)
+    assessment_id = db.Column(db.Integer, db.ForeignKey("assessments.id"), nullable=False)
+    role = db.Column(db.String(20), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now, nullable=False)

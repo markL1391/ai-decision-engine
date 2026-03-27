@@ -1,4 +1,6 @@
 import json
+import os
+
 from flask import Blueprint, jsonify, request
 from pydantic import ValidationError
 
@@ -8,7 +10,7 @@ from app.schemas import AssessmentAnalyzeRequest, ExplanationGenerateRequest, Co
 from app.mapping import map_metrics_to_indicators
 from app.engine import run_deterministic_engine
 from app.rag import retrieve_context
-from app.llm import build_prompt, generate_explanation_mock
+from app.llm import build_prompt, generate_explanation_openai, build_compare_prompt, generate_compare_explanation_openai
 
 api_bp = Blueprint("api", __name__)
 
@@ -171,11 +173,24 @@ def generate_explanation():
     retrieved_context = retrieve_context(engine_result)
     prompt = build_prompt(engine_result, retrieved_context)
 
-    explanation_data = generate_explanation_mock(engine_result, retrieved_context)
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return jsonify({"error": "OPENAI_API_KEY is not configured."}), 500
+
+    try:
+        explanation_data = generate_explanation_openai(
+            api_key=api_key,
+            engine_result=engine_result,
+            retrieved_context=retrieved_context,
+        )
+
+    except Exception as e:
+        return jsonify({"error": "OpenAI generation failed", "details": str(e)}), 500
 
     existing = Explanation.query.filter_by(assessment_id=assessment.id).first()
 
     if existing:
+
         existing.why_limit_json = json.dumps(explanation_data["why_limit"])
         existing.blocks_transition_json = json.dumps(explanation_data["blocks_transition"])
         existing.references_json = json.dumps(explanation_data["references"])
@@ -242,3 +257,53 @@ def compare_assessments():
         "assessment_b_id": b.id,
         "comparison": comparison
     }), 200
+
+@api_bp.route("/assessments/compare/explain", methods=["POST"])
+def compare_and_explain():
+    data = request.get_json(silent=True)
+
+    if not data:
+        return jsonify({"error": "Invalid or missing JSON body"}), 400
+
+    try:
+        payload = CompareAssessmentsRequest(**data)
+    except ValidationError as e:
+        return jsonify({"error": "Validation failed", "details": e.errors()}), 422
+
+    a = Assessment.query.get(payload.assessment_a_id)
+    b = Assessment.query.get(payload.assessment_b_id)
+
+    if not a or not b:
+        return jsonify({"error": "One or both assessments not found"}), 404
+
+    if not a.result or not b.result:
+        return jsonify({"error": "One or both assessments have no results"}), 400
+
+    comparison = {
+        "r_delta": round(b.result.r_score - a.result.r_score, 2),
+        "p_delta": round(b.result.p_score - a.result.p_score, 2),
+        "t_delta": round(b.result.t_score - a.result.t_score, 2),
+        "a_delta": round(b.result.a_score - a.result.a_score, 2),
+        "overall_readiness_delta": round(b.result.overall_readiness - a.result.overall_readiness, 2),
+        "bottleneck_a": json.loads(a.result.bottlenecks_json),
+        "bottleneck_b": json.loads(b.result.bottlenecks_json),
+        "transition_feasible_a": a.result.transition_feasible,
+        "transition_feasible_b": b.result.transition_feasible,
+    }
+
+    # LLM explanation
+    prompt_preview = build_compare_prompt(comparison)
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if api_key:
+        explanation = generate_compare_explanation_openai(api_key, comparison)
+
+    return jsonify({
+        "assessment_a_id": a.id,
+        "assessment_b_id": b.id,
+        "comparison": comparison,
+        "prompt_preview": prompt_preview,
+        "explanation": explanation,
+    }), 200
+
+
