@@ -87,9 +87,11 @@ def generate_explanation_openai(
                     },
                     "required": ["why_limit", "blocks_transition", "references"],
                     "additionalProperties": False,
-                }
+                },
             },
-        )
+        },
+    )
+
 
     parsed = json.loads(response.output_text)
 
