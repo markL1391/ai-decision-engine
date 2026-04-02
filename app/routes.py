@@ -86,6 +86,16 @@ def analyze_assessment():
     return jsonify({
         "message": "Assessment created and analyzed successfully",
         "assessment_id": assessment.id,
+        "engine_result": {
+            "dimension_scores": engine_result["dimension_scores"],
+            "overall_readiness": engine_result["overall_readiness"],
+            "bottlenecks": engine_result["bottlenecks"],
+            "required_changes": engine_result["required_changes"],
+            "required_capacities": engine_result["required_capacities"],
+            "bottleneck_details": engine_result["bottleneck_details"],
+            "transition_feasible": engine_result["transition_feasible"],
+            "transition_risk": engine_result["transition_risk"],
+        }
     }), 201
 
 @api_bp.route("/assessments/<int:assessment_id>", methods=["GET"])
@@ -156,19 +166,8 @@ def generate_explanation():
     if not assessment.result:
         return jsonify({"error": "No deterministic result found for assessment"}), 404
 
-    engine_result = {
-        "dimension_scores": {
-            "R": assessment.result.r_score,
-            "P": assessment.result.p_score,
-            "T": assessment.result.t_score,
-            "A": assessment.result.a_score,
-        },
-        "overall_readiness": assessment.result.overall_readiness,
-        "bottlenecks": json.loads(assessment.result.bottlenecks_json),
-        "transition_feasible": assessment.result.transition_feasible,
-        "transition_risk": assessment.result.transition_risk,
-        "required_changes": json.loads(assessment.result.required_changes_json),
-    }
+    mapped_indicators = map_metrics_to_indicators(assessment.metrics)
+    engine_result = run_deterministic_engine(mapped_indicators, assessment.target_level)
 
     retrieved_context = retrieve_context(engine_result)
     prompt = build_prompt(engine_result, retrieved_context)
@@ -183,14 +182,12 @@ def generate_explanation():
             engine_result=engine_result,
             retrieved_context=retrieved_context,
         )
-
     except Exception as e:
         return jsonify({"error": "OpenAI generation failed", "details": str(e)}), 500
 
     existing = Explanation.query.filter_by(assessment_id=assessment.id).first()
 
     if existing:
-
         existing.why_limit_json = json.dumps(explanation_data["why_limit"])
         existing.blocks_transition_json = json.dumps(explanation_data["blocks_transition"])
         existing.references_json = json.dumps(explanation_data["references"])
@@ -212,12 +209,20 @@ def generate_explanation():
     return jsonify({
         "assessment_id": assessment.id,
         "prompt_preview": prompt,
+        "engine_result": {
+            "bottlenecks": engine_result["bottlenecks"],
+            "required_changes": engine_result["required_changes"],
+            "required_capacities": engine_result["required_capacities"],
+            "bottleneck_details": engine_result["bottleneck_details"],
+            "transition_feasible": engine_result["transition_feasible"],
+            "transition_risk": engine_result["transition_risk"],
+        },
         "explanation": {
             "why_limit": explanation_data["why_limit"],
             "blocks_transition": explanation_data["blocks_transition"],
             "references": explanation_data["references"],
         }
-    }),200
+    }), 200
 
 @api_bp.route("/assessments/compare", methods=["POST"])
 def compare_assessments():
@@ -295,8 +300,13 @@ def compare_and_explain():
     prompt_preview = build_compare_prompt(comparison)
 
     api_key = os.getenv("OPENAI_API_KEY")
-    if api_key:
+    if not api_key:
+        return jsonify({"error": "OPENAI_API_KEY is not configured."}), 500
+
+    try:
         explanation = generate_compare_explanation_openai(api_key, comparison)
+    except Exception as e:
+        return jsonify({"error": "OpenAI generation failed", "details": str(e)}), 500
 
     return jsonify({
         "assessment_a_id": a.id,

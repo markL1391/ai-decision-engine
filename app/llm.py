@@ -10,6 +10,8 @@ def build_prompt(engine_result: Dict[str, Any], retrieved_context: List[str]) ->
     feasible = engine_result["transition_feasible"]
     risk = engine_result["transition_risk"]
     required_changes = engine_result["required_changes"]
+    bottleneck_details = engine_result["bottleneck_details"]
+    required_capacities = engine_result["required_capacities"]
 
     context_block = "\n".join(f"- {item}" for item in retrieved_context)
 
@@ -33,6 +35,8 @@ Context:
 - Transition feasible: {feasible}
 - Transition risk: {risk}
 - Required changes: {json.dumps(required_changes)}
+- Required capacities: {json.dumps(required_capacities)}
+- Bottleneck details: {json.dumps(bottleneck_details)}
 
 Retrieved knowledge:
 {context_block}
@@ -57,6 +61,7 @@ def generate_explanation_openai(
                     "Do not recommend actions. "
                     "Do not change any scores. "
                     "Do not invent data."
+                    "Do not mention variable names like R, P, T, A directly."
                 ),
             },
             {
@@ -127,6 +132,18 @@ Context:
 - Transition feasible B: {comparison["transition_feasible_b"]}
 - Bottlenecks A: {json.dumps(comparison["bottleneck_a"])}
 - Bottlenecks B: {json.dumps(comparison["bottleneck_b"])}
+
+Rules:
+- Use concrete language
+- Avoid generic business buzzwords
+- Be specific (e.g. coordination, stability, scalability)
+- Focus on what changes in real operations
+- If one state has no bottlenecks, state that clearly
+- Map underlying changes to these areas:
+  - Responsibility → ownership and accountability
+  - Process → consistency and efficiency
+  - Technology → system support and scalability
+  - Acceptance → willingness to adopt changes
 """
     return prompt.strip()
 
@@ -143,10 +160,19 @@ def generate_compare_explanation_openai(
             {
                 "role": "developer",
                 "content": (
-                    "You explain strucutural differences between two system states. "
+                    "You explain strucutural differences systems for business decision-makers. "
                     "Do not recommend actions. "
                     "Do not invent data. "
-                    "Keep the explanation concise and factual"
+                    "Keep the explanation concise and factual. "
+                    "Use simple, concrete language. "
+                    "Avoid abstract phrases like 'structural gains' or 'operational capacity'. "
+                    "Describe what actually improves in practice. "
+                    "Focus on real-world impact (e.g. coordination, stability, scalability). "
+                    "Each list must contain MAX 3 items. "
+                    "Focus on business impact, not numbers. "
+                    "Avoid mentioning deltas or numeric values unless critical. "
+                    "Do not mention variable names like R, P, T, A directly. "
+                    "Each item must be ONE short sentence."
                 ),
             },
             {
