@@ -1,7 +1,7 @@
 import json
 import os
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, render_template
 from pydantic import ValidationError
 
 from app import db
@@ -11,8 +11,52 @@ from app.mapping import map_metrics_to_indicators
 from app.engine import run_deterministic_engine
 from app.rag import retrieve_context
 from app.llm import build_prompt, generate_explanation_openai, build_compare_prompt, generate_compare_explanation_openai
+from types import SimpleNamespace
 
 api_bp = Blueprint("api", __name__)
+
+@api_bp.route("/", methods=["GET"])
+def home():
+    return render_template("index.html")
+
+
+@api_bp.route("/demo", methods=["POST"])
+def demo():
+    metrics = [
+        SimpleNamespace(name="automation_rate", value=float(request.form.get("automation_rate"))),
+        SimpleNamespace(name="system_availability", value=float(request.form.get("system_availability"))),
+        SimpleNamespace(name="error_rate", value=float(request.form.get("error_rate"))),
+        SimpleNamespace(name="order_processing_time", value=float(request.form.get("order_processing_time"))),
+        SimpleNamespace(name="process_standardization", value=request.form.get("process_standardization")),
+        SimpleNamespace(name="role_clarity", value=request.form.get("role_clarity")),
+        SimpleNamespace(name="ownership_definition", value=request.form.get("ownership_definition")),
+        SimpleNamespace(name="training_coverage", value=float(request.form.get("training_coverage"))),
+        SimpleNamespace(name="tool_adoption", value=float(request.form.get("tool_adoption"))),
+        SimpleNamespace(name="change_communication", value=request.form.get("change_communication")),
+    ]
+
+    mapped_indicators = map_metrics_to_indicators(metrics)
+    result = run_deterministic_engine(mapped_indicators, target_level=2)
+
+    explanation = None
+    api_key = os.getenv("OPENAI_API_KEY")
+
+    if api_key:
+        try:
+            retrieved_context = retrieve_context(result)
+            explanation = generate_explanation_openai(
+                api_key=api_key,
+                engine_result=result,
+                retrieved_context=retrieved_context,
+            )
+        except Exception as e:
+            explanation = {
+                "why_limit": ["OpenAI explanation could not be generated."],
+                "blocks_transition": [str(e)],
+                "references": []
+            }
+
+    return render_template("index.html", result=result, explanation=explanation)
 
 @api_bp.route("/health", methods=["GET"])
 def health():

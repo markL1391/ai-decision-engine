@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explainable Decision Engine</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f6f7fb;
+            color: #1f2937;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+        }
+
+        h1, h2, h3 {
+            margin-top: 0;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #d1d5db;
+            font-size: 15px;
+            box-sizing: border-box;
+        }
+
+        .help {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
+        button {
+            margin-top: 20px;
+            background: #111827;
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .metric-card {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .metric-value {
+            font-size: 28px;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .status-green {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-red {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-yellow {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .empty-state {
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        .mono {
+            font-family: monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            background: #f9fafb;
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <h1>Explainable Decision Engine</h1>
+        <p>
+            Gib reale operative Kennzahlen ein. Das System mappt sie auf Indikatoren,
+            berechnet Reifegrade und identifiziert konkrete Engpässe und fehlende Kapazitäten.
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>Input Metrics</h2>
+        <form method="POST" action="/demo">
+            <div class="form-grid">
+                <div>
+                    <label for="automation_rate">Automation Rate (%)</label>
+                    <input id="automation_rate" name="automation_rate" type="number" min="0" max="100" step="1" required>
+                    <div class="help">Anteil automatisierter Abläufe</div>
+                </div>
+
+                <div>
+                    <label for="system_availability">System Availability (%)</label>
+                    <input id="system_availability" name="system_availability" type="number" min="0" max="100" step="1" required>
+                    <div class="help">Systemverfügbarkeit im Betrieb</div>
+                </div>
+
+                <div>
+                    <label for="error_rate">Error Rate (%)</label>
+                    <input id="error_rate" name="error_rate" type="number" min="0" max="100" step="0.1" required>
+                    <div class="help">Fehlerquote im Prozess</div>
+                </div>
+
+                <div>
+                    <label for="order_processing_time">Order Processing Time (min)</label>
+                    <input id="order_processing_time" name="order_processing_time" type="number" min="0" step="1" required>
+                    <div class="help">Durchschnittliche Bearbeitungszeit</div>
+                </div>
+
+                <div>
+                    <label for="process_standardization">Process Standardization</label>
+                    <select id="process_standardization" name="process_standardization" required>
+                        <option value="low">low</option>
+                        <option value="medium">medium</option>
+                        <option value="high">high</option>
+                        <option value="fully standardized">fully standardized</option>
+                    </select>
+                    <div class="help">Wie standardisiert sind die Prozesse?</div>
+                </div>
+
+                <div>
+                    <label for="role_clarity">Role Clarity</label>
+                    <select id="role_clarity" name="role_clarity" required>
+                        <option value="unclear">unclear</option>
+                        <option value="partial">partial</option>
+                        <option value="clear">clear</option>
+                        <option value="fully defined">fully defined</option>
+                    </select>
+                    <div class="help">Wie klar sind Rollen definiert?</div>
+                </div>
+
+                <div>
+                    <label for="ownership_definition">Ownership Definition</label>
+                    <select id="ownership_definition" name="ownership_definition" required>
+                        <option value="none">none</option>
+                        <option value="informal">informal</option>
+                        <option value="formal">formal</option>
+                        <option value="enforced">enforced</option>
+                    </select>
+                    <div class="help">Wie verbindlich ist Ownership geregelt?</div>
+                </div>
+
+                <div>
+                    <label for="training_coverage">Training Coverage (%)</label>
+                    <input id="training_coverage" name="training_coverage" type="number" min="0" max="100" step="1" required>
+                    <div class="help">Abdeckung von Trainingsmaßnahmen</div>
+                </div>
+
+                <div>
+                    <label for="tool_adoption">Tool Adoption (%)</label>
+                    <input id="tool_adoption" name="tool_adoption" type="number" min="0" max="100" step="1" required>
+                    <div class="help">Nutzung neuer Tools im Alltag</div>
+                </div>
+
+                <div>
+                    <label for="change_communication">Change Communication</label>
+                    <select id="change_communication" name="change_communication" required>
+                        <option value="none">none</option>
+                        <option value="irregular">irregular</option>
+                        <option value="structured">structured</option>
+                        <option value="embedded">embedded</option>
+                    </select>
+                    <div class="help">Wie strukturiert wird Veränderung kommuniziert?</div>
+                </div>
+            </div>
+
+            <button type="submit">Analyse starten</button>
+        </form>
+    </div>
+
+    {% if result %}
+    <div class="card">
+        <h2>Ergebnisübersicht</h2>
+        <p><strong>Overall Readiness:</strong> {{ result.overall_readiness }}</p>
+
+        <p>
+            <strong>Transition Feasible:</strong>
+            {% if result.transition_feasible %}
+                <span class="status status-green">Ja</span>
+            {% else %}
+                <span class="status status-red">Nein</span>
+            {% endif %}
+        </p>
+
+        <p>
+            <strong>Transition Risk:</strong>
+            {% if result.transition_risk == "low" %}
+                <span class="status status-green">Low</span>
+            {% elif result.transition_risk == "medium" %}
+                <span class="status status-yellow">Medium</span>
+            {% else %}
+                <span class="status status-red">High</span>
+            {% endif %}
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>Dimension Scores</h2>
+        <div class="grid">
+            <div class="metric-card">
+                <div>Technology</div>
+                <div class="metric-value">{{ result.dimension_scores.T }}</div>
+            </div>
+            <div class="metric-card">
+                <div>Process</div>
+                <div class="metric-value">{{ result.dimension_scores.P }}</div>
+            </div>
+            <div class="metric-card">
+                <div>Responsibility</div>
+                <div class="metric-value">{{ result.dimension_scores.R }}</div>
+            </div>
+            <div class="metric-card">
+                <div>Acceptance</div>
+                <div class="metric-value">{{ result.dimension_scores.A }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Interpretation</h2>
+        <ul>
+            <li><strong>Technology:</strong> {{ result.maturity_descriptions.T }}</li>
+            <li><strong>Process:</strong> {{ result.maturity_descriptions.P }}</li>
+            <li><strong>Responsibility:</strong> {{ result.maturity_descriptions.R }}</li>
+            <li><strong>Acceptance:</strong> {{ result.maturity_descriptions.A }}</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>Bottlenecks</h2>
+        {% if result.bottlenecks %}
+            <ul>
+                {% for dimension in result.bottlenecks %}
+                    <li><strong>{{ dimension }}</strong></li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="empty-state">Aktuell blockiert kein struktureller Engpass den Übergang.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>Bottleneck Details</h2>
+        {% if result.bottleneck_details %}
+            {% for dimension, detail in result.bottleneck_details.items() %}
+                <div class="metric-card" style="margin-bottom: 12px;">
+                    <h3>{{ dimension }}</h3>
+                    <p><strong>Issue:</strong> {{ detail.issue }}</p>
+
+                    <p><strong>Required Changes:</strong></p>
+                    {% if detail.required_changes %}
+                        <ul>
+                            {% for item in detail.required_changes %}
+                                <li>{{ item }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="empty-state">Keine direkten Änderungen hinterlegt.</p>
+                    {% endif %}
+
+                    <p><strong>Required Capacities:</strong></p>
+                    {% if detail.required_capacities %}
+                        <ul>
+                            {% for item in detail.required_capacities %}
+                                <li>{{ item }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="empty-state">Keine zusätzlichen Kapazitäten erforderlich.</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="empty-state">Keine Bottleneck-Details vorhanden, da kein Engpass identifiziert wurde.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2>Required Capacities</h2>
+        {% if result.required_capacities %}
+            {% for dimension, capacities in result.required_capacities.items() %}
+                <div class="metric-card" style="margin-bottom: 12px;">
+                    <h3>{{ dimension }}</h3>
+                    <ul>
+                        {% for cap in capacities %}
+                            <li>{{ cap }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="empty-state">Es sind aktuell keine zusätzlichen Kapazitäten erforderlich.</p>
+        {% endif %}
+    </div>
+
+    {% if explanation %}
+<div class="card">
+    <h2>AI Explanation</h2>
+
+    <h3>Why the system is limited</h3>
+    {% if explanation.why_limit %}
+        <ul>
+            {% for item in explanation.why_limit %}
+                <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="empty-state">Keine Erklärung verfügbar.</p>
+    {% endif %}
+
+    <h3>What blocks the transition</h3>
+    {% if explanation.blocks_transition %}
+        <ul>
+            {% for item in explanation.blocks_transition %}
+                <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="empty-state">Keine Blocker beschrieben.</p>
+    {% endif %}
+
+    <h3>References</h3>
+    {% if explanation.references %}
+        <ul>
+            {% for item in explanation.references %}
+                <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="empty-state">Keine Referenzen verfügbar.</p>
+    {% endif %}
+</div>
+{% endif %}
+
+    <div class="card">
+        <h2>Technischer Output</h2>
+        <div class="mono">{{ result }}</div>
+    </div>
+    {% endif %}
+</div>
+</body>
+</html>
