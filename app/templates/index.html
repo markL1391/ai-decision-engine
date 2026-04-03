@@ -4,144 +4,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Explainable Decision Engine</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f6f7fb;
-            color: #1f2937;
-            margin: 0;
-            padding: 0;
-        }
-
-        .container {
-            max-width: 1100px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 14px;
-            padding: 24px;
-            margin-bottom: 20px;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
-        }
-
-        h1, h2, h3 {
-            margin-top: 0;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 16px;
-        }
-
-        label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 10px 12px;
-            border-radius: 10px;
-            border: 1px solid #d1d5db;
-            font-size: 15px;
-            box-sizing: border-box;
-        }
-
-        .help {
-            font-size: 13px;
-            color: #6b7280;
-            margin-top: 6px;
-            line-height: 1.4;
-        }
-
-        button {
-            margin-top: 20px;
-            background: #111827;
-            color: white;
-            border: none;
-            padding: 12px 18px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 15px;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
-        }
-
-        .metric-card {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 16px;
-        }
-
-        .metric-value {
-            font-size: 28px;
-            font-weight: bold;
-            margin-top: 8px;
-        }
-
-        .status {
-            display: inline-block;
-            padding: 8px 12px;
-            border-radius: 999px;
-            font-weight: bold;
-            font-size: 14px;
-        }
-
-        .status-green {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .status-red {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        .status-yellow {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .empty-state {
-            color: #6b7280;
-            font-style: italic;
-        }
-
-        .mono {
-            font-family: monospace;
-            font-size: 13px;
-            white-space: pre-wrap;
-            background: #f9fafb;
-            padding: 14px;
-            border-radius: 10px;
-            border: 1px solid #e5e7eb;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-network">
+        <div class="node node-1"></div>
+        <div class="node node-2"></div>
+        <div class="node node-3"></div>
+        <div class="node node-4"></div>
+        <div class="beam beam-1"></div>
+        <div class="beam beam-2"></div>
+        <div class="beam beam-3"></div>
+    </div>
+    <div class="loading-box">
+        <div class="loading-title">AI is revealing hidden system constraints</div>
+        <div class="loading-subtitle">
+            Connecting signals, mapping dependencies, and translating them into operational insight.
+        </div>
+    </div>
+</div>
+
 <div class="container">
-    <div class="card">
+
+    <!-- Hero -->
+    <div class="card hero-card">
         <h1>Explainable Decision Engine</h1>
+        <p class="hero-tagline">
+            Connecting fragmented signals, revealing hidden bottlenecks, and making system constraints visible.
+        </p>
         <p>
-            Gib reale operative Kennzahlen ein. Das System mappt sie auf Indikatoren,
-            berechnet Reifegrade und identifiziert konkrete Engpässe und fehlende Kapazitäten.
+            Gib reale operative Kennzahlen ein. Das System übersetzt sie in strukturelle Zusammenhänge,
+            identifiziert Engpässe und zeigt, was eure Skalierung konkret blockiert.
         </p>
     </div>
 
+    <!-- Input Form -->
     <div class="card">
         <h2>Input Metrics</h2>
-        <form method="POST" action="/demo">
+        <form method="POST" action="/demo" id="assessmentForm">
             <div class="form-grid">
+
+                <div>
+                    <label for="company_id">Unternehmen</label>
+                    <input id="company_id" name="company_id" type="text" placeholder="z.B. Muster GmbH" required>
+                </div>
+
+                <div>
+                    <label for="industry">Branche</label>
+                    <input id="industry" name="industry" type="text" placeholder="z.B. Logistik">
+                    <div class="help">Optional – verbessert die KI-Empfehlung</div>
+                </div>
+
                 <div>
                     <label for="automation_rate">Automation Rate (%)</label>
                     <input id="automation_rate" name="automation_rate" type="number" min="0" max="100" step="1" required>
@@ -221,26 +136,30 @@
                     </select>
                     <div class="help">Wie strukturiert wird Veränderung kommuniziert?</div>
                 </div>
-            </div>
 
+            </div>
             <button type="submit">Analyse starten</button>
         </form>
     </div>
 
     {% if result %}
+
+    <!-- Ergebnisübersicht -->
     <div class="card">
         <h2>Ergebnisübersicht</h2>
-        <p><strong>Overall Readiness:</strong> {{ result.overall_readiness }}</p>
-
+        <p><strong>Unternehmen:</strong> {{ assessment.company_id }}</p>
+        {% if assessment.industry %}
+        <p><strong>Branche:</strong> {{ assessment.industry }}</p>
+        {% endif %}
+        <p><strong>Overall Readiness:</strong> {{ "%.1f"|format(result.overall_readiness) }} / 3</p>
         <p>
-            <strong>Transition Feasible:</strong>
+            <strong>Transition möglich:</strong>
             {% if result.transition_feasible %}
                 <span class="status status-green">Ja</span>
             {% else %}
                 <span class="status status-red">Nein</span>
             {% endif %}
         </p>
-
         <p>
             <strong>Transition Risk:</strong>
             {% if result.transition_risk == "low" %}
@@ -253,149 +172,137 @@
         </p>
     </div>
 
+    <!-- Dimension Scores -->
     <div class="card">
         <h2>Dimension Scores</h2>
         <div class="grid">
+            {% set dims = [("T", "Technology"), ("P", "Process"), ("R", "Responsibility"), ("A", "Acceptance")] %}
+            {% for key, label in dims %}
             <div class="metric-card">
-                <div>Technology</div>
-                <div class="metric-value">{{ result.dimension_scores.T }}</div>
+                <div>{{ label }}</div>
+                <div class="metric-value">{{ "%.1f"|format(result.dimension_scores[key]) }}</div>
+                <div style="margin-top:6px; font-size:13px; color:#8fa1c2;">
+                    {{ result.maturity_descriptions[key] }}
+                </div>
             </div>
-            <div class="metric-card">
-                <div>Process</div>
-                <div class="metric-value">{{ result.dimension_scores.P }}</div>
-            </div>
-            <div class="metric-card">
-                <div>Responsibility</div>
-                <div class="metric-value">{{ result.dimension_scores.R }}</div>
-            </div>
-            <div class="metric-card">
-                <div>Acceptance</div>
-                <div class="metric-value">{{ result.dimension_scores.A }}</div>
-            </div>
+            {% endfor %}
         </div>
     </div>
 
+    <!-- Bottlenecks -->
+    {% if result.bottlenecks %}
     <div class="card">
-        <h2>Interpretation</h2>
-        <ul>
-            <li><strong>Technology:</strong> {{ result.maturity_descriptions.T }}</li>
-            <li><strong>Process:</strong> {{ result.maturity_descriptions.P }}</li>
-            <li><strong>Responsibility:</strong> {{ result.maturity_descriptions.R }}</li>
-            <li><strong>Acceptance:</strong> {{ result.maturity_descriptions.A }}</li>
-        </ul>
-    </div>
-
-    <div class="card">
-        <h2>Bottlenecks</h2>
-        {% if result.bottlenecks %}
+        <h2>Strukturelle Engpässe</h2>
+        {% for dim, detail in result.bottleneck_details.items() %}
+        <div class="metric-card" style="margin-bottom:12px;">
+            {% set dim_labels = {"T": "Technology", "P": "Process", "R": "Responsibility", "A": "Adoption"} %}
+            <h3>{{ dim_labels[dim] }} – {{ detail.issue }}</h3>
+            {% if detail.required_capacities %}
             <ul>
-                {% for dimension in result.bottlenecks %}
-                    <li><strong>{{ dimension }}</strong></li>
+                {% for cap in detail.required_capacities %}
+                <li>{{ cap }}</li>
                 {% endfor %}
             </ul>
-        {% else %}
-            <p class="empty-state">Aktuell blockiert kein struktureller Engpass den Übergang.</p>
-        {% endif %}
+            {% endif %}
+        </div>
+        {% endfor %}
     </div>
+    {% endif %}
 
+    <!-- AI Executive Summary -->
+    {% if summary %}
     <div class="card">
-        <h2>Bottleneck Details</h2>
-        {% if result.bottleneck_details %}
-            {% for dimension, detail in result.bottleneck_details.items() %}
-                <div class="metric-card" style="margin-bottom: 12px;">
-                    <h3>{{ dimension }}</h3>
-                    <p><strong>Issue:</strong> {{ detail.issue }}</p>
-
-                    <p><strong>Required Changes:</strong></p>
-                    {% if detail.required_changes %}
-                        <ul>
-                            {% for item in detail.required_changes %}
-                                <li>{{ item }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p class="empty-state">Keine direkten Änderungen hinterlegt.</p>
-                    {% endif %}
-
-                    <p><strong>Required Capacities:</strong></p>
-                    {% if detail.required_capacities %}
-                        <ul>
-                            {% for item in detail.required_capacities %}
-                                <li>{{ item }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p class="empty-state">Keine zusätzlichen Kapazitäten erforderlich.</p>
-                    {% endif %}
-                </div>
-            {% endfor %}
-        {% else %}
-            <p class="empty-state">Keine Bottleneck-Details vorhanden, da kein Engpass identifiziert wurde.</p>
-        {% endif %}
+        <h2 class="section-title">Gesamteinschätzung <span class="ai-badge">AI</span></h2>
+        <div class="summary-box">{{ summary }}</div>
     </div>
+    {% endif %}
 
+    <!-- Top Prioritäten -->
+    {% if priorities %}
     <div class="card">
-        <h2>Required Capacities</h2>
-        {% if result.required_capacities %}
-            {% for dimension, capacities in result.required_capacities.items() %}
-                <div class="metric-card" style="margin-bottom: 12px;">
-                    <h3>{{ dimension }}</h3>
-                    <ul>
-                        {% for cap in capacities %}
-                            <li>{{ cap }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            {% endfor %}
-        {% else %}
-            <p class="empty-state">Es sind aktuell keine zusätzlichen Kapazitäten erforderlich.</p>
+        <h2 class="section-title">Top-Prioritäten <span class="ai-badge">AI</span></h2>
+        {% for p in priorities %}
+        <div class="metric-card" style="margin-bottom:12px;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                <span class="status status-yellow" style="font-size:13px;">{{ p.rank }}</span>
+                <span class="status status-green" style="font-size:12px;">{{ p.dimension_label }}</span>                {% if p.timeframe %}
+                <span style="font-size:12px; color:#8fa1c2;">{{ p.timeframe }}</span>
+                {% endif %}
+            </div>
+            <h3>{{ p.action }}</h3>
+            <p style="margin-top:4px;">{{ p.rationale }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Größter Hebel + Risiko + Nächster Schritt -->
+    {% if lever or risk or next_step %}
+    <div class="card">
+        <h2 class="section-title">Handlungsrahmen <span class="ai-badge">AI</span></h2>
+
+        {% if lever %}
+        <div class="metric-card" style="margin-bottom:12px;">
+        <h3>Größter Hebel – {{ lever.dimension_label }}</h3>
+            <p>{{ lever.explanation }}</p>
+        </div>
+        {% endif %}
+
+        {% if risk %}
+        <div class="metric-card" style="margin-bottom:12px;">
+            <h3>
+                Risiko bei Untätigkeit –
+                {% if risk.level == "high" %}
+                    <span class="status status-red">High</span>
+                {% elif risk.level == "medium" %}
+                    <span class="status status-yellow">Medium</span>
+                {% else %}
+                    <span class="status status-green">Low</span>
+                {% endif %}
+            </h3>
+            <p>{{ risk.consequence }}</p>
+        </div>
+        {% endif %}
+
+        {% if next_step %}
+        <div class="metric-card">
+            <h3>Nächster konkreter Schritt</h3>
+            <p>{{ next_step.action }}</p>
+            {% if next_step.owner %}
+            <p style="margin-top:4px;"><strong>Verantwortlich:</strong> {{ next_step.owner }}</p>
+            {% endif %}
+            {% if next_step.by_when %}
+            <p><strong>Bis:</strong> {{ next_step.by_when }}</p>
+            {% endif %}
+        </div>
         {% endif %}
     </div>
-
-    {% if explanation %}
-<div class="card">
-    <h2>AI Explanation</h2>
-
-    <h3>Why the system is limited</h3>
-    {% if explanation.why_limit %}
-        <ul>
-            {% for item in explanation.why_limit %}
-                <li>{{ item }}</li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p class="empty-state">Keine Erklärung verfügbar.</p>
     {% endif %}
 
-    <h3>What blocks the transition</h3>
-    {% if explanation.blocks_transition %}
+    <!-- RAG-Quellen -->
+    {% if references %}
+    <div class="card">
+        <h2>Genutzte Quellen</h2>
         <ul>
-            {% for item in explanation.blocks_transition %}
-                <li>{{ item }}</li>
+            {% for ref in references %}
+            <li>{{ ref }}</li>
             {% endfor %}
         </ul>
-    {% else %}
-        <p class="empty-state">Keine Blocker beschrieben.</p>
+    </div>
     {% endif %}
 
-    <h3>References</h3>
-    {% if explanation.references %}
-        <ul>
-            {% for item in explanation.references %}
-                <li>{{ item }}</li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p class="empty-state">Keine Referenzen verfügbar.</p>
-    {% endif %}
+    {% endif %} {# end if result #}
+
 </div>
-{% endif %}
 
-    <div class="card">
-        <h2>Technischer Output</h2>
-        <div class="mono">{{ result }}</div>
-    </div>
-    {% endif %}
-</div>
+<script>
+    const form = document.getElementById("assessmentForm");
+    const overlay = document.getElementById("loadingOverlay");
+    if (form && overlay) {
+        form.addEventListener("submit", function () {
+            overlay.classList.add("active");
+        });
+    }
+</script>
 </body>
 </html>

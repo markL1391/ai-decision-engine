@@ -1,10 +1,12 @@
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 
 def score_by_thresholds_desc(value: float, thresholds: List[tuple[float, int]]) -> int:
     """
-    For metrics where a higher value is better.
+    Score metrics where a higher value is better.
+
     Example:
-        [(80, 30), (50, 2), (20, 1)] means:
+        [(80, 3), (50, 2), (20, 1)] means:
         >=80 -> 3, >=50 -> 2, >=20 -> 1, else 0
     """
     for threshold, score in thresholds:
@@ -12,21 +14,24 @@ def score_by_thresholds_desc(value: float, thresholds: List[tuple[float, int]]) 
             return score
     return 0
 
+
 def score_by_thresholds_asc(value: float, thresholds: List[tuple[float, int]]) -> int:
     """
-    For metrics where a lower value is better.
+    Score metrics where a lower value is better.
+
     Example:
-    [(2, 3), (5, 2), (10, 1)] means:
-    <=2 -> 3, <=5 -> 2, <=10 -> 1, else 0
+        [(2, 3), (5, 2), (10, 1)] means:
+        <=2 -> 3, <=5 -> 2, <=10 -> 1, else 0
     """
     for threshold, score in thresholds:
         if value <= threshold:
             return score
     return 0
 
-def score_process_standardization(value: str) -> int:
-    normalized = value.strip().lower()
 
+def score_process_standardization(value: str) -> int:
+    """Map process standardization categories to a 0–3 maturity score."""
+    normalized = value.strip().lower()
     mapping = {
         "low": 0,
         "medium": 1,
@@ -36,9 +41,10 @@ def score_process_standardization(value: str) -> int:
     }
     return mapping.get(normalized, 0)
 
-def score_role_clarity(value: str) -> int:
-    normalized = value.strip().lower()
 
+def score_role_clarity(value: str) -> int:
+    """Map role clarity categories to a 0–3 maturity score."""
+    normalized = value.strip().lower()
     mapping = {
         "unclear": 0,
         "partial": 1,
@@ -48,9 +54,10 @@ def score_role_clarity(value: str) -> int:
     }
     return mapping.get(normalized, 0)
 
-def score_ownership_definition(value: str) -> int:
-    normalized = value.strip().lower()
 
+def score_ownership_definition(value: str) -> int:
+    """Map ownership definition categories to a 0–3 maturity score."""
+    normalized = value.strip().lower()
     mapping = {
         "none": 0,
         "informal": 1,
@@ -59,9 +66,23 @@ def score_ownership_definition(value: str) -> int:
     }
     return mapping.get(normalized, 0)
 
+
+def score_change_communication(value: str) -> int:
+    """Map change communication categories to a 0–3 maturity score."""
+    normalized = value.strip().lower()
+    mapping = {
+        "none": 0,
+        "irregular": 1,
+        "structured": 2,
+        "embedded": 3,
+    }
+    return mapping.get(normalized, 0)
+
+
 def map_single_metric(name: str, value: Any) -> List[Dict[str, Any]]:
     """
-    Maps a single KPI to one or more indicators.
+    Map one KPI to one or more normalized indicator records.
+
     Returns a list because one metric could theoretically affect multiple indicators.
     """
     indicators: List[Dict[str, Any]] = []
@@ -70,7 +91,7 @@ def map_single_metric(name: str, value: Any) -> List[Dict[str, Any]]:
         indicators.append({
             "dimension": "T",
             "indicator": "T1",
-            "value": score_by_thresholds_desc(float(value), [(80, 3), (50, 2), (20,1)]),
+            "value": score_by_thresholds_desc(float(value), [(80, 3), (50, 2), (20, 1)]),
             "source_metric": name,
         })
 
@@ -139,25 +160,20 @@ def map_single_metric(name: str, value: Any) -> List[Dict[str, Any]]:
         })
 
     elif name == "change_communication":
-        mapping = {
-            "none": 0,
-            "irregular": 1,
-            "structured": 2,
-            "embedded": 3,
-        }
         indicators.append({
             "dimension": "A",
             "indicator": "A1",
-            "value": mapping.get(str(value).strip().lower(), 0),
+            "value": score_change_communication(str(value)),
             "source_metric": name,
         })
 
     return indicators
 
+
 def map_metrics_to_indicators(metrics: List[Any]) -> List[Dict[str, Any]]:
     """
-    Accepts a list of MetricInput-like objects with .name and .value
-    and returns mapped indicator dictionaries.
+    Accept a list of MetricInput-like objects with .name and .value
+    and return mapped indicator dictionaries.
     """
     mapped_indicators: List[Dict[str, Any]] = []
 

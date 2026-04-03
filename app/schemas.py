@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 class AssessmentMeta(BaseModel):
     domain: str = "generic"
     notes: Optional[str] = None
-    target_level: int = Field(default=2,ge=1)
+    target_level: int = Field(default=2, ge=0, le=3)
 
 class MetricInput(BaseModel):
     name: str

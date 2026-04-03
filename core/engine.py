@@ -1,5 +1,29 @@
-from typing import List, Dict, Any
+"""
+engine.py
+
+Deterministic scoring engine for the Explainable AI Maturity Assessment System.
+
+This module transforms mapped indicator values into a structured assessment result.
+
+It is the core decision layer of the system and is responsible for:
+- calculating dimension-level maturity scores
+- identifying bottlenecks
+- evaluating transition feasibility
+- estimating transition risk
+- deriving required changes and capacities
+- generating explainable detail structures for downstream use
+
+This deterministic layer is intentionally separated from the LLM layer.
+The engine decides. The LLM explains.
+"""
+
 from collections import defaultdict
+from typing import Any, Dict, List
+
+
+# =============================================================================
+# Static reference models
+# =============================================================================
 
 MATURITY_MODEL = {
     "T": {
@@ -59,7 +83,20 @@ CAPACITY_REQUIREMENTS = {
 }
 
 
+# =============================================================================
+# Core scoring functions
+# =============================================================================
+
 def calculate_dimension_scores(indicators: List[Dict[str, Any]]) -> Dict[str, float]:
+    """
+    Aggregate indicator values into average dimension scores.
+
+    Args:
+        indicators: List of mapped indicator dictionaries.
+
+    Returns:
+        Dictionary of average scores by dimension.
+    """
     grouped: Dict[str, List[float]] = defaultdict(list)
 
     for item in indicators:
@@ -73,18 +110,66 @@ def calculate_dimension_scores(indicators: List[Dict[str, Any]]) -> Dict[str, fl
 
 
 def calculate_overall_readiness(scores: Dict[str, float]) -> float:
+    """
+    Calculate the overall readiness score.
+
+    The overall readiness is defined as the minimum score across all dimensions.
+    This reflects the idea that the weakest dimension constrains the transition.
+
+    Args:
+        scores: Dictionary of dimension scores.
+
+    Returns:
+        Overall readiness score.
+    """
     return min(scores.values()) if scores else 0.0
 
 
 def identify_bottlenecks(scores: Dict[str, float], target_level: int) -> List[str]:
+    """
+    Identify all dimensions below the target maturity level.
+
+    Args:
+        scores: Dictionary of dimension scores.
+        target_level: Required target maturity level.
+
+    Returns:
+        List of bottleneck dimension keys.
+    """
     return [dim for dim, val in scores.items() if val < target_level]
 
 
 def check_transition_feasibility(scores: Dict[str, float], target_level: int) -> bool:
+    """
+    Check whether the transition is feasible.
+
+    A transition is considered feasible only if all dimensions reach or exceed
+    the required target level.
+
+    Args:
+        scores: Dictionary of dimension scores.
+        target_level: Required target maturity level.
+
+    Returns:
+        True if feasible, otherwise False.
+    """
     return all(score >= target_level for score in scores.values())
 
 
 def calculate_transition_risk(scores: Dict[str, float], target_level: int) -> str:
+    """
+    Estimate transition risk based on maturity gaps.
+
+    The larger the maximum gap between current score and target level,
+    the higher the transition risk.
+
+    Args:
+        scores: Dictionary of dimension scores.
+        target_level: Required target maturity level.
+
+    Returns:
+        Risk label: 'low', 'medium', or 'high'.
+    """
     gaps = [target_level - s for s in scores.values() if s < target_level]
 
     if not gaps:
@@ -99,7 +184,21 @@ def calculate_transition_risk(scores: Dict[str, float], target_level: int) -> st
     return "low"
 
 
+# =============================================================================
+# Explainability helpers
+# =============================================================================
+
 def build_required_changes(indicators: List[Dict[str, Any]], target_level: int) -> Dict[str, List[str]]:
+    """
+    Identify which indicators remain below the target level.
+
+    Args:
+        indicators: List of mapped indicators.
+        target_level: Required target maturity level.
+
+    Returns:
+        Dictionary mapping each dimension to its missing indicator names.
+    """
     changes: Dict[str, List[str]] = defaultdict(list)
 
     for item in indicators:
@@ -110,6 +209,15 @@ def build_required_changes(indicators: List[Dict[str, Any]], target_level: int) 
 
 
 def build_required_capacities(required_changes: Dict[str, List[str]]) -> Dict[str, List[str]]:
+    """
+    Translate missing indicators into missing organisational capacities.
+
+    Args:
+        required_changes: Dictionary of indicators below target level.
+
+    Returns:
+        Dictionary of required capacities by dimension.
+    """
     capacities: Dict[str, List[str]] = {}
 
     for dimension, indicators in required_changes.items():
@@ -127,6 +235,17 @@ def build_bottleneck_details(
     required_changes: Dict[str, List[str]],
     required_capacities: Dict[str, List[str]],
 ) -> Dict[str, Dict[str, Any]]:
+    """
+    Build a structured detail block for each bottleneck.
+
+    Args:
+        bottlenecks: List of bottleneck dimensions.
+        required_changes: Missing indicators by dimension.
+        required_capacities: Missing capacities by dimension.
+
+    Returns:
+        Dictionary of detailed bottleneck information.
+    """
     details: Dict[str, Dict[str, Any]] = {}
 
     for dimension in bottlenecks:
@@ -140,6 +259,17 @@ def build_bottleneck_details(
 
 
 def add_maturity_descriptions(scores: Dict[str, float]) -> Dict[str, str]:
+    """
+    Add human-readable maturity descriptions for each dimension score.
+
+    Scores are rounded to the nearest maturity level for text description.
+
+    Args:
+        scores: Dictionary of dimension scores.
+
+    Returns:
+        Dictionary of maturity description strings by dimension.
+    """
     descriptions: Dict[str, str] = {}
 
     for dim, score in scores.items():
@@ -149,7 +279,24 @@ def add_maturity_descriptions(scores: Dict[str, float]) -> Dict[str, str]:
     return descriptions
 
 
+# =============================================================================
+# Main orchestration function
+# =============================================================================
+
 def run_deterministic_engine(indicators: List[Dict[str, Any]], target_level: int) -> Dict[str, Any]:
+    """
+    Run the full deterministic assessment pipeline.
+
+    This function combines all scoring and explainability steps into one
+    structured result object used by the API and the LLM explanation layer.
+
+    Args:
+        indicators: List of mapped indicators.
+        target_level: Required target maturity level.
+
+    Returns:
+        Structured engine result dictionary.
+    """
     scores = calculate_dimension_scores(indicators)
     overall = calculate_overall_readiness(scores)
     bottlenecks = identify_bottlenecks(scores, target_level)
