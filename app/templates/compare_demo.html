@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "Vergleich – Explainable Decision Engine" if lang == "de" else "Compare – Explainable Decision Engine" }}{% endblock %}
+
+{% block content %}
+
+{% set t_page = {
+    "hero_badge": "Vergleichsmodus" if lang == "de" else "Compare Mode",
+    "hero_title": "Szenarien vergleichen" if lang == "de" else "Compare Scenarios",
+    "hero_tagline": "Vergleiche den Ist-Zustand mit einem zukünftigen Implementierungsszenario." if lang == "de" else "Compare the current state with a future implementation scenario.",
+    "hero_desc": "Diese Demo zeigt, wie sich strukturelle Engpässe verschieben, wenn operative Änderungen und Umsetzungsmaßnahmen eingeführt werden." if lang == "de" else "This demo shows how structural bottlenecks shift when operational changes and implementation measures are introduced.",
+
+    "error_title": "Konfigurationsfehler" if lang == "de" else "Configuration Error",
+
+    "scenario_input": "Szenario-Eingabe" if lang == "de" else "Scenario Input",
+
+    "scenario_a": "Szenario A – Ist-Zustand" if lang == "de" else "Scenario A – Current State",
+    "scenario_b": "Szenario B – Zielzustand" if lang == "de" else "Scenario B – Future State",
+
+    "company": "Unternehmen" if lang == "de" else "Company",
+    "industry": "Branche" if lang == "de" else "Industry",
+
+    "automation": "Automatisierungsgrad (%)" if lang == "de" else "Automation Rate (%)",
+    "availability": "Systemverfügbarkeit (%)" if lang == "de" else "System Availability (%)",
+    "error_rate": "Fehlerrate (%)" if lang == "de" else "Error Rate (%)",
+    "processing_time": "Bearbeitungszeit" if lang == "de" else "Order Processing Time",
+
+    "process_std": "Prozessstandardisierung" if lang == "de" else "Process Standardization",
+    "role_clarity": "Rollenklarheit" if lang == "de" else "Role Clarity",
+    "ownership": "Verantwortungsdefinition" if lang == "de" else "Ownership Definition",
+
+    "training": "Schulungsabdeckung (%)" if lang == "de" else "Training Coverage (%)",
+    "adoption": "Tool-Nutzung (%)" if lang == "de" else "Tool Adoption (%)",
+    "change": "Change-Kommunikation" if lang == "de" else "Change Communication",
+
+    "submit": "Szenarien vergleichen" if lang == "de" else "Compare Scenarios",
+
+    "results": "Vergleichsergebnisse" if lang == "de" else "Comparison Results",
+    "dimension_shift": "Dimensionsverschiebung" if lang == "de" else "Dimension Shift",
+
+    "technology_delta": "Technologie Δ" if lang == "de" else "Technology Δ",
+    "process_delta": "Prozess Δ" if lang == "de" else "Process Δ",
+    "responsibility_delta": "Verantwortung Δ" if lang == "de" else "Responsibility Δ",
+    "adoption_delta": "Akzeptanz Δ" if lang == "de" else "Adoption Δ",
+
+    "technology": "Technologie" if lang == "de" else "Technology",
+    "process": "Prozess" if lang == "de" else "Process",
+    "responsibility": "Verantwortung" if lang == "de" else "Responsibility",
+    "adoption_label": "Akzeptanz" if lang == "de" else "Adoption",
+
+    "scenario_a_short": "Szenario A" if lang == "de" else "Scenario A",
+    "scenario_b_short": "Szenario B" if lang == "de" else "Scenario B",
+
+    "ai_title": "KI-Vergleichsanalyse" if lang == "de" else "AI Comparison Insight",
+    "summary": "Zusammenfassung" if lang == "de" else "Summary",
+    "improvements": "Wesentliche Verbesserungen" if lang == "de" else "Main Improvements",
+    "impact": "Auswirkung auf die Transition" if lang == "de" else "Transition Impact",
+
+    "low": "Niedrig" if lang == "de" else "Low",
+    "medium": "Mittel" if lang == "de" else "Medium",
+    "high": "Hoch" if lang == "de" else "High",
+
+    "unclear": "unklar" if lang == "de" else "unclear",
+    "partial": "teilweise" if lang == "de" else "partial",
+    "clear": "klar" if lang == "de" else "clear",
+    "fully_defined": "vollständig definiert" if lang == "de" else "fully defined",
+
+    "none": "keine" if lang == "de" else "none",
+    "informal": "informell" if lang == "de" else "informal",
+    "formal": "formal" if lang == "de" else "formal",
+    "enforced": "verankert" if lang == "de" else "enforced",
+
+    "irregular": "unregelmäßig" if lang == "de" else "irregular",
+    "structured": "strukturiert" if lang == "de" else "structured",
+    "embedded": "verankert" if lang == "de" else "embedded"
+} %}
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-network">
+        <div class="node node-1"></div>
+        <div class="node node-2"></div>
+        <div class="node node-3"></div>
+        <div class="node node-4"></div>
+        <div class="beam beam-1"></div>
+        <div class="beam beam-2"></div>
+        <div class="beam beam-3"></div>
+    </div>
+    <div class="loading-box">
+        <div class="loading-title">
+            {{ "KI simuliert Szenarioverschiebung" if lang == "de" else "AI is simulating scenario shift" }}
+        </div>
+        <div class="loading-subtitle">
+            {{ "Strukturelle Abhängigkeiten werden verglichen und Veränderungslücken ausgewertet..." if lang == "de" else "Comparing structural dependencies and measuring adoption gaps..." }}
+        </div>
+    </div>
+</div>
+
+<!-- Hero -->
+<div class="card hero-card">
+    <div class="hero-badge">{{ t_page.hero_badge }}</div>
+
+    <h1>{{ t_page.hero_title }}</h1>
+
+    <p class="hero-tagline">
+        {{ t_page.hero_tagline }}
+    </p>
+
+    <p class="hero-description">
+        {{ t_page.hero_desc }}
+    </p>
+</div>
+
+{% if error %}
+<!-- Error -->
+<div class="card">
+    <h2 style="color:#ff6b6b;">{{ t_page.error_title }}</h2>
+    <p>{{ error }}</p>
+</div>
+{% endif %}
+
+<!-- Scenario Input -->
+<div class="card">
+    <h2>{{ t_page.scenario_input }}</h2>
+
+    <form method="POST"
+          action="{{ url_for('api.compare_demo') }}?lang={{ lang }}"
+          id="compareForm">
+
+        <div class="form-grid">
+
+            <!-- Scenario A -->
+            <div class="metric-card">
+                <h3>{{ t_page.scenario_a }}</h3>
+
+                <label>{{ t_page.company }}</label>
+                <input name="a_company_id" type="text" required>
+
+                <label>{{ t_page.industry }}</label>
+                <input name="a_industry" type="text">
+
+                <label>{{ t_page.automation }}</label>
+                <input name="a_automation_rate" type="number" required>
+
+                <label>{{ t_page.availability }}</label>
+                <input name="a_system_availability" type="number" required>
+
+                <label>{{ t_page.error_rate }}</label>
+                <input name="a_error_rate" type="number" step="0.1" required>
+
+                <label>{{ t_page.processing_time }}</label>
+                <input name="a_order_processing_time" type="number" required>
+
+                <label>{{ t_page.process_std }}</label>
+                <select name="a_process_standardization">
+                    <option value="low">{{ t_page.low }}</option>
+                    <option value="medium">{{ t_page.medium }}</option>
+                    <option value="high">{{ t_page.high }}</option>
+                    <option value="fully standardized">{{ "vollständig standardisiert" if lang == "de" else "fully standardized" }}</option>
+                </select>
+
+                <label>{{ t_page.role_clarity }}</label>
+                <select name="a_role_clarity">
+                    <option value="unclear">{{ t_page.unclear }}</option>
+                    <option value="partial">{{ t_page.partial }}</option>
+                    <option value="clear">{{ t_page.clear }}</option>
+                    <option value="fully defined">{{ t_page.fully_defined }}</option>
+                </select>
+
+                <label>{{ t_page.ownership }}</label>
+                <select name="a_ownership_definition">
+                    <option value="none">{{ t_page.none }}</option>
+                    <option value="informal">{{ t_page.informal }}</option>
+                    <option value="formal">{{ t_page.formal }}</option>
+                    <option value="enforced">{{ t_page.enforced }}</option>
+                </select>
+
+                <label>{{ t_page.training }}</label>
+                <input name="a_training_coverage" type="number" required>
+
+                <label>{{ t_page.adoption }}</label>
+                <input name="a_tool_adoption" type="number" required>
+
+                <label>{{ t_page.change }}</label>
+                <select name="a_change_communication">
+                    <option value="none">{{ t_page.none }}</option>
+                    <option value="irregular">{{ t_page.irregular }}</option>
+                    <option value="structured">{{ t_page.structured }}</option>
+                    <option value="embedded">{{ t_page.embedded }}</option>
+                </select>
+            </div>
+
+            <!-- Scenario B -->
+            <div class="metric-card">
+                <h3>{{ t_page.scenario_b }}</h3>
+
+                <label>{{ t_page.company }}</label>
+                <input name="b_company_id" type="text" required>
+
+                <label>{{ t_page.industry }}</label>
+                <input name="b_industry" type="text">
+
+                <label>{{ t_page.automation }}</label>
+                <input name="b_automation_rate" type="number" required>
+
+                <label>{{ t_page.availability }}</label>
+                <input name="b_system_availability" type="number" required>
+
+                <label>{{ t_page.error_rate }}</label>
+                <input name="b_error_rate" type="number" step="0.1" required>
+
+                <label>{{ t_page.processing_time }}</label>
+                <input name="b_order_processing_time" type="number" required>
+
+                <label>{{ t_page.process_std }}</label>
+                <select name="b_process_standardization">
+                    <option value="low">{{ t_page.low }}</option>
+                    <option value="medium">{{ t_page.medium }}</option>
+                    <option value="high">{{ t_page.high }}</option>
+                    <option value="fully standardized">{{ "vollständig standardisiert" if lang == "de" else "fully standardized" }}</option>
+                </select>
+
+                <label>{{ t_page.role_clarity }}</label>
+                <select name="b_role_clarity">
+                    <option value="unclear">{{ t_page.unclear }}</option>
+                    <option value="partial">{{ t_page.partial }}</option>
+                    <option value="clear">{{ t_page.clear }}</option>
+                    <option value="fully defined">{{ t_page.fully_defined }}</option>
+                </select>
+
+                <label>{{ t_page.ownership }}</label>
+                <select name="b_ownership_definition">
+                    <option value="none">{{ t_page.none }}</option>
+                    <option value="informal">{{ t_page.informal }}</option>
+                    <option value="formal">{{ t_page.formal }}</option>
+                    <option value="enforced">{{ t_page.enforced }}</option>
+                </select>
+
+                <label>{{ t_page.training }}</label>
+                <input name="b_training_coverage" type="number" required>
+
+                <label>{{ t_page.adoption }}</label>
+                <input name="b_tool_adoption" type="number" required>
+
+                <label>{{ t_page.change }}</label>
+                <select name="b_change_communication">
+                    <option value="none">{{ t_page.none }}</option>
+                    <option value="irregular">{{ t_page.irregular }}</option>
+                    <option value="structured">{{ t_page.structured }}</option>
+                    <option value="embedded">{{ t_page.embedded }}</option>
+                </select>
+            </div>
+
+        </div>
+
+        <button type="submit">{{ t_page.submit }}</button>
+    </form>
+</div>
+
+{% if comparison %}
+<!-- Comparison Results -->
+<div class="card">
+    <h2>{{ t_page.results }}</h2>
+
+    <div class="grid">
+        <div class="metric-card">
+            <div>{{ t_page.technology_delta }}</div>
+            <div class="metric-value">{{ comparison.t_delta }}</div>
+        </div>
+
+        <div class="metric-card">
+            <div>{{ t_page.process_delta }}</div>
+            <div class="metric-value">{{ comparison.p_delta }}</div>
+        </div>
+
+        <div class="metric-card">
+            <div>{{ t_page.responsibility_delta }}</div>
+            <div class="metric-value">{{ comparison.r_delta }}</div>
+        </div>
+
+        <div class="metric-card">
+            <div>{{ t_page.adoption_delta }}</div>
+            <div class="metric-value">{{ comparison.a_delta }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Dimension Shift -->
+{% if result_a and result_b %}
+<div class="card">
+    <h2>{{ t_page.dimension_shift }}</h2>
+
+    <div class="compare-bars">
+        <div class="compare-row">
+            <div class="compare-label">{{ t_page.technology }}</div>
+            <div class="bar-track">
+                <div class="bar-a" style="width: {{ (result_a.dimension_scores['T'] / 3) * 100 }}%"></div>
+                <div class="bar-b" style="width: {{ (result_b.dimension_scores['T'] / 3) * 100 }}%"></div>
+            </div>
+        </div>
+
+        <div class="compare-row">
+            <div class="compare-label">{{ t_page.process }}</div>
+            <div class="bar-track">
+                <div class="bar-a" style="width: {{ (result_a.dimension_scores['P'] / 3) * 100 }}%"></div>
+                <div class="bar-b" style="width: {{ (result_b.dimension_scores['P'] / 3) * 100 }}%"></div>
+            </div>
+        </div>
+
+        <div class="compare-row">
+            <div class="compare-label">{{ t_page.responsibility }}</div>
+            <div class="bar-track">
+                <div class="bar-a" style="width: {{ (result_a.dimension_scores['R'] / 3) * 100 }}%"></div>
+                <div class="bar-b" style="width: {{ (result_b.dimension_scores['R'] / 3) * 100 }}%"></div>
+            </div>
+        </div>
+
+        <div class="compare-row">
+            <div class="compare-label">{{ t_page.adoption_label }}</div>
+            <div class="bar-track">
+                <div class="bar-a" style="width: {{ (result_a.dimension_scores['A'] / 3) * 100 }}%"></div>
+                <div class="bar-b" style="width: {{ (result_b.dimension_scores['A'] / 3) * 100 }}%"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="compare-legend">
+        <span><i class="legend-a"></i> {{ t_page.scenario_a_short }}</span>
+        <span><i class="legend-b"></i> {{ t_page.scenario_b_short }}</span>
+    </div>
+</div>
+{% endif %}
+
+{% if compare_explanation %}
+<!-- AI Comparison Insight -->
+<div class="card">
+    <h2 class="section-title">{{ t_page.ai_title }} <span class="ai-badge">AI</span></h2>
+
+    <div class="metric-card" style="margin-bottom:12px;">
+        <h3>{{ t_page.summary }}</h3>
+        <p>{{ compare_explanation.summary }}</p>
+    </div>
+
+    {% if compare_explanation.main_improvements %}
+    <div class="metric-card" style="margin-bottom:12px;">
+        <h3>{{ t_page.improvements }}</h3>
+        <ul>
+            {% for item in compare_explanation.main_improvements %}
+            <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if compare_explanation.transition_impact %}
+    <div class="metric-card">
+        <h3>{{ t_page.impact }}</h3>
+        <ul>
+            {% for item in compare_explanation.transition_impact %}
+            <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+{% endif %}
+
+<!-- Page Script -->
+<script>
+const compareForm = document.getElementById("compareForm");
+const overlay = document.getElementById("loadingOverlay");
+
+if (compareForm && overlay) {
+    compareForm.addEventListener("submit", function () {
+        overlay.classList.add("active");
+    });
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "Benchmark – Explainable Decision Engine" if lang == "de" else "Benchmark – Explainable Decision Engine" }}{% endblock %}
+
+{% block content %}
+
+{% set t_page = {
+    "hero_badge": "Benchmark-Modus" if lang == "de" else "Benchmark Mode",
+    "hero_title": "Multi-Unternehmens-Benchmark" if lang == "de" else "Multi-Company Benchmark Demo",
+    "hero_tagline": "Vergleiche mehrere Organisationen auf einem gemeinsamen Strukturmodell." if lang == "de" else "Compare multiple organisations on the same structural model.",
+    "hero_desc": "Diese Ansicht zeigt, wie unterschiedliche operative Umgebungen in vergleichbare Systemdimensionen, Engpässe und Reifegrade übersetzt werden." if lang == "de" else "This view shows how different operational environments translate into comparable system dimensions, bottlenecks, and readiness levels.",
+
+    "ranking": "Benchmark-Ranking" if lang == "de" else "Benchmark Ranking",
+    "rank": "Rang" if lang == "de" else "Rank",
+    "company": "Unternehmen" if lang == "de" else "Company",
+    "industry": "Branche" if lang == "de" else "Industry",
+
+    "technology": "Technologie" if lang == "de" else "Technology",
+    "process": "Prozess" if lang == "de" else "Process",
+    "responsibility": "Verantwortung" if lang == "de" else "Responsibility",
+    "adoption": "Akzeptanz" if lang == "de" else "Adoption",
+
+    "readiness": "Bereitschaft" if lang == "de" else "Readiness",
+    "feasibility": "Machbarkeit" if lang == "de" else "Feasibility",
+    "risk": "Risiko" if lang == "de" else "Risk",
+
+    "feasible": "Machbar" if lang == "de" else "Feasible",
+    "not_feasible": "Nicht machbar" if lang == "de" else "Not feasible",
+
+    "low": "Niedrig" if lang == "de" else "Low",
+    "medium": "Mittel" if lang == "de" else "Medium",
+    "high": "Hoch" if lang == "de" else "High",
+
+    "summary": "Benchmark-Zusammenfassung" if lang == "de" else "Benchmark Summary",
+    "best": "Beste Gesamtbereitschaft" if lang == "de" else "Best Overall Readiness",
+    "worst": "Niedrigste Gesamtbereitschaft" if lang == "de" else "Lowest Overall Readiness",
+
+    "ranking_bar": "Bereitschafts-Ranking" if lang == "de" else "Readiness Ranking",
+
+    "profiles": "Unternehmensprofile" if lang == "de" else "Company Profiles",
+    "strongest": "Stärkste Dimension" if lang == "de" else "Strongest",
+    "weakest": "Schwächste Dimension" if lang == "de" else "Weakest",
+
+    "overall": "Gesamtbereitschaft" if lang == "de" else "Overall Readiness",
+    "transition": "Transition",
+    "bottlenecks": "Engpässe" if lang == "de" else "Bottlenecks",
+    "none": "Keine" if lang == "de" else "None"
+} %}
+
+<!-- Hero -->
+<div class="card hero-card">
+    <div class="hero-badge">{{ t_page.hero_badge }}</div>
+
+    <h1>{{ t_page.hero_title }}</h1>
+
+    <p class="hero-tagline">
+        {{ t_page.hero_tagline }}
+    </p>
+
+    <p class="hero-description">
+        {{ t_page.hero_desc }}
+    </p>
+</div>
+
+<!-- Benchmark Ranking -->
+<div class="card">
+    <h2>{{ t_page.ranking }}</h2>
+
+    <div class="table-wrap">
+        <table class="benchmark-table">
+            <thead>
+                <tr>
+                    <th>{{ t_page.rank }}</th>
+                    <th>{{ t_page.company }}</th>
+                    <th>{{ t_page.industry }}</th>
+                    <th>{{ t_page.technology }}</th>
+                    <th>{{ t_page.process }}</th>
+                    <th>{{ t_page.responsibility }}</th>
+                    <th>{{ t_page.adoption }}</th>
+                    <th>{{ t_page.readiness }}</th>
+                    <th>{{ t_page.feasibility }}</th>
+                    <th>{{ t_page.risk }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for company in benchmark_results %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ company.name }}</td>
+                    <td>{{ company.industry }}</td>
+                    <td>{{ "%.1f"|format(company.scores["T"]) }}</td>
+                    <td>{{ "%.1f"|format(company.scores["P"]) }}</td>
+                    <td>{{ "%.1f"|format(company.scores["R"]) }}</td>
+                    <td>{{ "%.1f"|format(company.scores["A"]) }}</td>
+                    <td><strong>{{ "%.1f"|format(company.overall_readiness) }}</strong></td>
+
+                    <td>
+                        {% if company.transition_feasible %}
+                            <span class="status status-green">{{ t_page.feasible }}</span>
+                        {% else %}
+                            <span class="status status-red">{{ t_page.not_feasible }}</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if company.transition_risk == "low" %}
+                            <span class="status status-green">{{ t_page.low }}</span>
+                        {% elif company.transition_risk == "medium" %}
+                            <span class="status status-yellow">{{ t_page.medium }}</span>
+                        {% else %}
+                            <span class="status status-red">{{ t_page.high }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Benchmark Summary -->
+<div class="card">
+    <h2>{{ t_page.summary }}</h2>
+
+    {% if benchmark_results %}
+    <div class="grid">
+        <div class="metric-card">
+            <div>{{ t_page.best }}</div>
+            <div class="metric-value">{{ benchmark_results[0].name }}</div>
+            <div style="margin-top:6px; font-size:13px; color:#8fa1c2;">
+                {{ "%.1f"|format(benchmark_results[0].overall_readiness) }} / 3
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div>{{ t_page.worst }}</div>
+            <div class="metric-value">{{ benchmark_results[-1].name }}</div>
+            <div style="margin-top:6px; font-size:13px; color:#8fa1c2;">
+                {{ "%.1f"|format(benchmark_results[-1].overall_readiness) }} / 3
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Ranking Bars -->
+<div class="card">
+    <h2>{{ t_page.ranking_bar }}</h2>
+
+    <div class="ranking-bars">
+        {% for company in benchmark_results %}
+        <div class="ranking-row">
+            <div class="ranking-name">{{ company.name }}</div>
+            <div class="ranking-track">
+                <div class="ranking-fill" style="width: {{ (company.overall_readiness / 3) * 100 }}%"></div>
+            </div>
+            <div class="ranking-score">{{ "%.1f"|format(company.overall_readiness) }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Company Profiles -->
+<div class="card">
+    <h2>{{ t_page.profiles }}</h2>
+
+    {% for company in benchmark_results %}
+    <div class="metric-card" style="margin-bottom:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+            <div>
+                <h3>{{ company.name }}</h3>
+                <div style="color:#8fa1c2;">{{ company.industry }}</div>
+            </div>
+
+            <div>
+                <span class="status status-green">
+                    {{ t_page.strongest }}: {{ company.strongest_dimension }}
+                </span>
+                <span class="status status-yellow">
+                    {{ t_page.weakest }}: {{ company.weakest_dimension }}
+                </span>
+            </div>
+        </div>
+
+        <div class="grid" style="margin-top:14px;">
+            <div class="metric-card">
+                <div>{{ t_page.technology }}</div>
+                <div class="metric-value">{{ "%.1f"|format(company.scores["T"]) }}</div>
+            </div>
+            <div class="metric-card">
+                <div>{{ t_page.process }}</div>
+                <div class="metric-value">{{ "%.1f"|format(company.scores["P"]) }}</div>
+            </div>
+            <div class="metric-card">
+                <div>{{ t_page.responsibility }}</div>
+                <div class="metric-value">{{ "%.1f"|format(company.scores["R"]) }}</div>
+            </div>
+            <div class="metric-card">
+                <div>{{ t_page.adoption }}</div>
+                <div class="metric-value">{{ "%.1f"|format(company.scores["A"]) }}</div>
+            </div>
+        </div>
+
+        <div style="margin-top:12px;">
+            <strong>{{ t_page.overall }}:</strong>
+            {{ "%.1f"|format(company.overall_readiness) }} / 3
+        </div>
+
+        <div style="margin-top:8px;">
+            <strong>{{ t_page.transition }}:</strong>
+            {% if company.transition_feasible %}
+                <span class="status status-green">{{ t_page.feasible }}</span>
+            {% else %}
+                <span class="status status-red">{{ t_page.not_feasible }}</span>
+            {% endif %}
+        </div>
+
+        <div style="margin-top:8px;">
+            <strong>{{ t_page.risk }}:</strong>
+            {% if company.transition_risk == "low" %}
+                <span class="status status-green">{{ t_page.low }}</span>
+            {% elif company.transition_risk == "medium" %}
+                <span class="status status-yellow">{{ t_page.medium }}</span>
+            {% else %}
+                <span class="status status-red">{{ t_page.high }}</span>
+            {% endif %}
+        </div>
+
+        <div style="margin-top:12px;">
+            <strong>{{ t_page.bottlenecks }}:</strong>
+            {{ company.bottlenecks | join(", ") if company.bottlenecks else t_page.none }}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

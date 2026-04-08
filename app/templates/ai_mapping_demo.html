@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ "KI Mapping Demo – Explainable Decision Engine" if lang == "de" else "AI Mapping Demo – Explainable Decision Engine" }}
+{% endblock %}
+
+{% block content %}
+
+{% set t_page = {
+
+    "hero_badge": "KI Mapping Hilfe" if lang == "de" else "AI Mapping Helper",
+
+    "hero_title": "KPI Dimension vorschlagen" if lang == "de" else "Suggest KPI Dimension",
+
+    "hero_tagline": "Lass dir automatisch eine strukturelle Dimension für einen KPI vorschlagen." if lang == "de" else "Let the system propose a likely structural dimension for a KPI.",
+
+    "hero_desc": "Dieses Tool ordnet einen KPI einer der vier Dimensionen zu: Technologie, Prozess, Verantwortung oder Akzeptanz." if lang == "de" else "This helper maps a KPI name to one of the four structural dimensions: Technology, Process, Responsibility, or Adoption.",
+
+    "input_title": "KPI eingeben" if lang == "de" else "Enter KPI Name",
+    "kpi_name": "KPI Name",
+    "placeholder": "z. B. Bearbeitungszeit Rezept" if lang == "de" else "e.g. Prescription Processing Time",
+
+    "submit": "Dimension vorschlagen" if lang == "de" else "Suggest Dimension",
+
+    "result_title": "Vorschlag" if lang == "de" else "Suggestion",
+    "dimension": "Vorgeschlagene Dimension" if lang == "de" else "Suggested Dimension",
+    "reason": "Begründung" if lang == "de" else "Reason",
+
+    "guide_title": "Dimensionen erklärt" if lang == "de" else "Dimension Guide",
+
+    "technology": "Technologie" if lang == "de" else "Technology",
+    "technology_text": "Systemunterstützung, Verfügbarkeit, Integration, Automatisierung, Infrastruktur" if lang == "de" else "System support, uptime, integration, automation, infrastructure",
+
+    "process": "Prozess" if lang == "de" else "Process",
+    "process_text": "Geschwindigkeit, Fehlerquoten, Durchsatz, Verzögerungen, Standardisierung" if lang == "de" else "Execution speed, error rates, throughput, delays, standardisation",
+
+    "responsibility": "Verantwortung" if lang == "de" else "Responsibility",
+    "responsibility_text": "Ownership, Zuständigkeiten, Übergaben, Eskalationsklarheit" if lang == "de" else "Ownership, accountability, handovers, escalation clarity",
+
+    "adoption": "Akzeptanz" if lang == "de" else "Adoption",
+    "adoption_text": "Training, Nutzung, Kommunikation von Veränderungen, Engagement, Akzeptanz" if lang == "de" else "Training, usage, change communication, engagement, acceptance"
+
+} %}
+
+<!-- Hero -->
+<div class="card hero-card">
+    <div class="hero-badge">{{ t_page.hero_badge }}</div>
+
+    <h1>{{ t_page.hero_title }}</h1>
+
+    <p class="hero-tagline">{{ t_page.hero_tagline }}</p>
+
+    <p class="hero-description">{{ t_page.hero_desc }}</p>
+</div>
+
+<!-- Input -->
+<div class="card">
+    <h2>{{ t_page.input_title }}</h2>
+
+    <form method="POST" action="{{ url_for('api.ai_mapping_demo') }}?lang={{ lang }}">
+        <label for="kpi_name">{{ t_page.kpi_name }}</label>
+
+        <input id="kpi_name"
+               type="text"
+               name="kpi_name"
+               placeholder="{{ t_page.placeholder }}"
+               required>
+
+        <button type="submit">{{ t_page.submit }}</button>
+    </form>
+</div>
+
+{% if suggestion %}
+<!-- Result -->
+<div class="card">
+    <h2>{{ t_page.result_title }}</h2>
+
+    <div class="grid">
+        <div class="metric-card">
+            <div>{{ t_page.dimension }}</div>
+            <div class="metric-value">{{ suggestion.dimension }}</div>
+        </div>
+
+        <div class="metric-card">
+            <div>{{ t_page.reason }}</div>
+            <div style="margin-top:8px; color:#d6dff5;">
+                {{ suggestion.reason }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Guide -->
+<div class="card">
+    <h2>{{ t_page.guide_title }}</h2>
+
+    <div class="grid">
+
+        <div class="metric-card">
+            <h3>{{ t_page.technology }}</h3>
+            <p>{{ t_page.technology_text }}</p>
+        </div>
+
+        <div class="metric-card">
+            <h3>{{ t_page.process }}</h3>
+            <p>{{ t_page.process_text }}</p>
+        </div>
+
+        <div class="metric-card">
+            <h3>{{ t_page.responsibility }}</h3>
+            <p>{{ t_page.responsibility_text }}</p>
+        </div>
+
+        <div class="metric-card">
+            <h3>{{ t_page.adoption }}</h3>
+            <p>{{ t_page.adoption_text }}</p>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

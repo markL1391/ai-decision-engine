@@ -103,6 +103,10 @@ def build_prompt(engine_result: Dict[str, Any], retrieved_context: List[str]) ->
     required_capacities = engine_result["required_capacities"]
     bottleneck_details = engine_result["bottleneck_details"]
     maturity_descriptions = engine_result.get("maturity_descriptions", {})
+    strengths = engine_result.get("strengths", [])
+    weaknesses = engine_result.get("weaknesses", [])
+    cross_dimension_insights = engine_result.get("cross_dimension_insights", [])
+    executive_summary = engine_result.get("executive_summary", "")
 
     context_block = _build_context_block(retrieved_context)
 
@@ -175,10 +179,21 @@ Deterministic assessment context:
 - Required changes: {json.dumps(required_changes)}
 - Required capacities: {json.dumps(required_capacities)}
 - Bottleneck details: {json.dumps(bottleneck_details)}
+- Strengths: {json.dumps(strengths)}
+- Weaknesses: {json.dumps(weaknesses)}
+- Cross-dimension insights: {json.dumps(cross_dimension_insights)}
+- Deterministic executive summary: {executive_summary}
+
+Dimension score detail:
+- Technology: {scores.get("T", 0)}
+- Process: {scores.get("P", 0)}
+- Responsibility: {scores.get("R", 0)}
+- Adoption: {scores.get("A", 0)}
 
 Retrieved knowledge:
 {context_block}
 """
+
     return prompt.strip()
 
 
@@ -193,6 +208,11 @@ def build_compare_prompt(comparison: Dict[str, Any]) -> str:
     Returns:
         Prompt string for the comparison explanation endpoint.
     """
+    t_delta = comparison.get("t_delta", 0)
+    a_delta = comparison.get("a_delta", 0)
+    risk_active = comparison.get("risk_alert", False)
+    gap = comparison.get("critical_gap", 0)
+
     prompt = f"""
 You are a system analyst writing for business decision-makers.
 
@@ -232,6 +252,21 @@ Comparison context:
 - Bottlenecks A: {json.dumps(comparison["bottleneck_a"])}
 - Bottlenecks B: {json.dumps(comparison["bottleneck_b"])}
 """
+
+    if risk_active:
+        prompt += f"""
+    CRITICAL RISK DETECTED:
+    The 'risk_alert' flag is TRUE. The technological advancement (T-delta: {t_delta}) 
+    has significantly outpaced organizational adoption (A-delta: {a_delta}).
+    The current gap is {gap}.
+
+    In your summary and transition_impact:
+    - Explicitly warn about the 'Digital Adoption Gap'.
+    - Mention the risk of 'Shelfware' (expensive technology that stays unused).
+    - Explain that Scenario B might fail despite better tech if training/acceptance isn't prioritized.
+    """
+    else:
+        prompt += "\nAnalysis: Focus on how the structural changes in Scenario B resolve the bottlenecks found in Scenario A."
     return prompt.strip()
 
 
@@ -383,6 +418,44 @@ def generate_explanation_openai(
     return parsed
 
 
+def build_compare_prompt(comparison: Dict[str, Any]) -> str:
+    """
+    Erstellt den strategischen Prompt basierend auf dem Delta-Payload.
+    """
+    t_delta = comparison.get("t_delta", 0)
+    a_delta = comparison.get("a_delta", 0)
+    risk_active = comparison.get("risk_alert", False)
+    gap = comparison.get("critical_gap", 0)
+
+    # Basis-Informationen für die KI
+    prompt = f"""
+    Compare Scenario A (Current) and Scenario B (Future) based on these structural deltas:
+    - Technology: {t_delta}
+    - Process: {comparison.get('p_delta', 0)}
+    - Responsibility: {comparison.get('r_delta', 0)}
+    - Adoption: {a_delta}
+    - Overall Readiness Delta: {comparison.get('overall_readiness_delta', 0)}
+
+    Feasibility Change: {comparison.get('transition_feasible_a')} -> {comparison.get('transition_feasible_b')}
+    """
+
+    # Die spezifische Risiko-Anweisung hinzufügen
+    if risk_active:
+        prompt += f"""
+        CRITICAL WARNING: The 'risk_alert' is TRUE. 
+        Note that the technological advancement (T-Delta: {t_delta}) has significantly outpaced 
+        organizational adoption (A-Delta: {a_delta}) with a critical gap of {gap}.
+
+        In your summary, you MUST:
+        1. Warn the user that this creates a 'Digital Adoption Gap'.
+        2. Explain that this leads to 'Shelfware' (expensive, unused technology).
+        3. Advise that Scenario B will likely fail unless adoption measures are drastically increased.
+        """
+    else:
+        prompt += "\nAnalysis: Focus on how the structural changes improve the system flow."
+
+    return prompt
+
 def generate_compare_explanation_openai(
     api_key: str,
     comparison: Dict[str, Any],
@@ -461,4 +534,240 @@ def generate_compare_explanation_openai(
         "transition_impact": parsed.get("transition_impact", []),
         "model_name": COMPARE_MODEL_NAME,
         "prompt_version": COMPARE_PROMPT_VERSION,
+    }
+
+def generate_explanation_openai_with_temperature(
+    api_key: str,
+    engine_result: Dict[str, Any],
+    retrieved_context: List[str],
+    temperature: float,
+) -> Dict[str, Any]:
+    """
+    Generate structured advisory output with an explicit temperature setting.
+
+    Args:
+        api_key: OpenAI API key.
+        engine_result: Deterministic engine result.
+        retrieved_context: Retrieved context lines.
+        temperature: Sampling temperature for the model.
+
+    Returns:
+        Structured response dictionary plus metadata.
+    """
+    client = OpenAI(api_key=api_key)
+    prompt = build_prompt(engine_result, retrieved_context)
+
+    response = client.responses.create(
+        model=ADVISOR_MODEL_NAME,
+        temperature=temperature,
+        input=[
+            {
+                "role": "developer",
+                "content": (
+                    "You generate structured advisory outputs for operational maturity assessments. "
+                    "Be concrete, specific, and operational. "
+                    "Avoid generic management language and empty consulting phrases. "
+                    "Ground every recommendation in the provided bottlenecks, scores, and required capacities. "
+                    "Do not invent facts. "
+                    "Return only valid JSON that matches the requested schema."
+                ),
+            },
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ],
+        text={
+            "format": {
+                "type": "json_schema",
+                "name": "advisor_output",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "summary": {"type": "string"},
+                        "top_priorities": {
+                            "type": "array",
+                            "minItems": 1,
+                            "maxItems": 3,
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "rank": {"type": "integer"},
+                                    "dimension": {"type": "string", "enum": ["T", "P", "R", "A"]},
+                                    "action": {"type": "string"},
+                                    "rationale": {"type": "string"},
+                                    "timeframe": {"type": ["string", "null"]},
+                                },
+                                "required": ["rank", "dimension", "action", "rationale", "timeframe"],
+                                "additionalProperties": False,
+                            },
+                        },
+                        "lever": {
+                            "type": "object",
+                            "properties": {
+                                "dimension": {"type": "string", "enum": ["T", "P", "R", "A"]},
+                                "explanation": {"type": "string"},
+                            },
+                            "required": ["dimension", "explanation"],
+                            "additionalProperties": False,
+                        },
+                        "risk": {
+                            "type": "object",
+                            "properties": {
+                                "level": {"type": "string", "enum": ["low", "medium", "high"]},
+                                "consequence": {"type": "string"},
+                            },
+                            "required": ["level", "consequence"],
+                            "additionalProperties": False,
+                        },
+                        "next_step": {
+                            "type": "object",
+                            "properties": {
+                                "action": {"type": "string"},
+                                "owner": {"type": ["string", "null"]},
+                                "by_when": {"type": ["string", "null"]},
+                            },
+                            "required": ["action", "owner", "by_when"],
+                            "additionalProperties": False,
+                        },
+                        "rag_references": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                    },
+                    "required": ["summary", "top_priorities", "lever", "risk", "next_step", "rag_references"],
+                    "additionalProperties": False,
+                },
+            }
+        },
+    )
+
+    parsed = _safe_json_loads(response.output_text)
+
+    if not parsed:
+        return {
+            "summary": "The advisory output could not be parsed.",
+            "top_priorities": [],
+            "lever": {"dimension": "P", "explanation": "Parsing failed."},
+            "risk": {"level": "medium", "consequence": "The model response could not be validated."},
+            "next_step": {"action": "Retry generation.", "owner": None, "by_when": None},
+            "rag_references": [],
+            "model_name": ADVISOR_MODEL_NAME,
+            "prompt_version": ADVISOR_PROMPT_VERSION,
+            "temperature": temperature,
+        }
+
+    parsed["model_name"] = ADVISOR_MODEL_NAME
+    parsed["prompt_version"] = ADVISOR_PROMPT_VERSION
+    parsed["temperature"] = temperature
+    return parsed
+
+
+def _generate_explanation_with_temperature(
+    client: OpenAI,
+    engine_result: Dict[str, Any],
+    retrieved_context: List[str],
+    temperature: float,
+) -> Dict[str, Any]:
+    """
+    Internal helper to generate one explanation with a specific temperature.
+    """
+    prompt = build_prompt(engine_result, retrieved_context)
+
+    response = client.responses.create(
+        model="gpt-4o-mini",
+        temperature=temperature,
+        input=[
+            {
+                "role": "developer",
+                "content": (
+                    "You explain structural constraints in systems. "
+                    "Use concrete business language. "
+                    "Do not recommend actions. "
+                    "Do not invent data."
+                ),
+            },
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ],
+        text={
+            "format": {
+                "type": "json_schema",
+                "name": "assessment_explanation",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "diagnosis": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                        "operational_impact": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                        "capacity_gap": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                    },
+                    "required": ["diagnosis", "operational_impact", "capacity_gap"],
+                    "additionalProperties": False,
+                },
+            }
+        },
+    )
+
+    try:
+        parsed = json.loads(response.output_text)
+    except Exception:
+        parsed = {
+            "diagnosis": ["The explanation could not be parsed."],
+            "operational_impact": ["Structured model output was invalid."],
+            "capacity_gap": [],
+        }
+
+    return {
+        "diagnosis": parsed["diagnosis"],
+        "operational_impact": parsed["operational_impact"],
+        "capacity_gap": parsed["capacity_gap"],
+        "temperature": temperature,
+    }
+
+
+def generate_temperature_comparison_openai(
+    api_key: str,
+    engine_result: Dict[str, Any],
+    retrieved_context: List[str],
+    temperature_a: float,
+    temperature_b: float,
+) -> Dict[str, Any]:
+    """
+    Generate two structured explanation outputs for the same assessment
+    using two different temperature values.
+    """
+    client = OpenAI(api_key=api_key)
+
+    output_a = _generate_explanation_with_temperature(
+        client=client,
+        engine_result=engine_result,
+        retrieved_context=retrieved_context,
+        temperature=temperature_a,
+    )
+
+    output_b = _generate_explanation_with_temperature(
+        client=client,
+        engine_result=engine_result,
+        retrieved_context=retrieved_context,
+        temperature=temperature_b,
+    )
+
+    return {
+        "output_a": output_a,
+        "output_b": output_b,
+        "model_name": "gpt-4o-mini",
+        "prompt_version": "v1_temperature_comparison_schema",
     }

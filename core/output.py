@@ -314,3 +314,19 @@ def inject_output_instruction(system_prompt: str) -> str:
         Extended system prompt including JSON output constraints.
     """
     return system_prompt.rstrip() + "\n\n" + OUTPUT_INSTRUCTION.strip()
+
+
+def build_executive_summary(result):
+    weakest = result["weaknesses"][0] if result["weaknesses"] else "no major constraint"
+    strongest = result["strengths"][0] if result["strengths"] else "no strong leverage"
+
+    readiness = result["overall_readiness"]
+
+    return f"""
+The current system shows an overall readiness of {readiness:.1f}.
+
+The primary constraint lies in {weakest}, limiting reliable execution and scalability.
+At the same time, {strongest} represents a key strength that can be leveraged to accelerate improvements.
+
+Focusing on resolving the constraint while utilizing existing strengths will enable faster and more sustainable system development.
+"""

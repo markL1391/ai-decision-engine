@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Explainable Decision Engine{% endblock %}
+
+{% block content %}
+
+{% set t_page = {
+
+    "hero_badge": "Erklärbare KI für operative Systeme" if lang == "de" else "Explainable AI for operational systems",
+
+    "hero_title": "Explainable Decision Engine",
+
+    "hero_tagline": "Verwandle operative Daten in strukturelle Klarheit und bessere Entscheidungen." if lang == "de" else "Turn operational data into structural insight and decision clarity.",
+
+    "hero_desc": "Die meisten Unternehmen messen KPIs. Die wenigsten verstehen das System dahinter. Diese Engine macht sichtbar, wo echte Engpässe entstehen – und warum sie Wachstum blockieren." if lang == "de" else "Most companies track metrics. Very few understand the system behind them. This engine reveals the hidden bottlenecks that actually block execution and scaling.",
+
+    "cta_start": "Analyse starten" if lang == "de" else "Start Analysis",
+    "cta_compare": "Szenarien vergleichen" if lang == "de" else "Compare Scenarios",
+    "cta_benchmark": "Benchmark" if lang == "de" else "Benchmark",
+
+    "problem_title": "Das Problem" if lang == "de" else "The Problem",
+    "problem_text": "KPIs sind fragmentiert. Entscheidungen sind reaktiv. Engpässe bleiben unsichtbar. Teams optimieren isolierte Kennzahlen, ohne die strukturellen Zusammenhänge zu verstehen." if lang == "de" else "Metrics are fragmented. Decisions are reactive. Bottlenecks stay invisible. Teams optimize isolated KPIs without understanding the structural system behind them.",
+
+    "solution_title": "Die Lösung" if lang == "de" else "The Solution",
+    "solution_text": "Ein deterministisches System übersetzt operative Daten in strukturelle Logik. KI erklärt, was blockiert, wo Risiko entsteht und was wirklich priorisiert werden sollte." if lang == "de" else "A deterministic system translates operational inputs into structural logic. AI explains what blocks execution, what creates risk, and what should be prioritized first.",
+
+    "how_title": "So funktioniert es" if lang == "de" else "How it works",
+
+    "step1": "Eingabe" if lang == "de" else "Input",
+    "step1_text": "Gib operative Kennzahlen aus deinem Unternehmen ein." if lang == "de" else "Enter operational metrics from your business.",
+
+    "step2": "Übersetzung" if lang == "de" else "Translate",
+    "step2_text": "Überführe diese Daten in strukturelle Dimensionen wie Technologie, Prozesse, Verantwortung und Akzeptanz." if lang == "de" else "Map inputs into system dimensions like Technology, Process, Responsibility, and Adoption.",
+
+    "step3": "Diagnose" if lang == "de" else "Diagnose",
+    "step3_text": "Erkenne Engpässe, Reifegradlücken und versteckte Abhängigkeiten." if lang == "de" else "Detect bottlenecks, readiness gaps, and hidden dependencies.",
+
+    "step4": "Erklärung" if lang == "de" else "Explain",
+    "step4_text": "KI übersetzt die Ergebnisse in klare, entscheidungsreife Insights." if lang == "de" else "AI translates results into clear, decision-ready insights.",
+
+    "why_title": "Warum das wichtig ist" if lang == "de" else "Why it matters",
+    "why_text": "Skalierung scheitert selten an Ideen – sondern an unsichtbaren Systemgrenzen." if lang == "de" else "Scaling does not fail because of missing ideas. It fails because of hidden system constraints.",
+
+    "modes_title": "Produktmodi" if lang == "de" else "Product Modes",
+
+    "mode1": "Ist-Zustand analysieren" if lang == "de" else "Analyze current state",
+    "mode1_text": "Bewerte die Reife deines Systems und identifiziere strukturelle Engpässe." if lang == "de" else "Assess system maturity and reveal bottlenecks.",
+
+    "mode2": "Szenarien vergleichen" if lang == "de" else "Compare scenarios",
+    "mode2_text": "Simuliere Veränderungen und prüfe, ob sie Engpässe wirklich lösen." if lang == "de" else "Simulate changes and test impact.",
+
+    "mode3": "Unternehmen benchmarken" if lang == "de" else "Benchmark companies",
+    "mode3_text": "Vergleiche Organisationen und erkenne Muster." if lang == "de" else "Compare organisations and detect patterns.",
+
+    "mode4": "Custom KPI Mapping" if lang == "de" else "Custom KPI mapping",
+    "mode4_text": "Integriere unternehmensspezifische KPIs." if lang == "de" else "Integrate company-specific KPIs.",
+
+    "mode5": "KI Mapping Hilfe" if lang == "de" else "AI mapping helper",
+    "mode5_text": "Lass dir automatisch die Struktur hinter KPIs vorschlagen." if lang == "de" else "Let AI suggest structural meaning of KPIs.",
+
+    "closing_title": "Mach das Unsichtbare sichtbar" if lang == "de" else "Make the invisible visible",
+    "closing_text": "Wechsle von isolierten KPIs zu echtem Systemverständnis." if lang == "de" else "Move from fragmented KPIs to real system understanding.",
+    "cta_final": "Engine starten" if lang == "de" else "Open the Engine"
+
+} %}
+
+<!-- Hero -->
+<div class="card hero-card">
+    <div class="hero-badge">{{ t_page.hero_badge }}</div>
+
+    <h1>{{ t_page.hero_title }}</h1>
+
+    <p class="hero-tagline">{{ t_page.hero_tagline }}</p>
+
+    <p class="hero-description">{{ t_page.hero_desc }}</p>
+
+    <div class="hero-actions">
+        <a href="{{ url_for('api.home') }}?lang={{ lang }}" class="btn-primary">{{ t_page.cta_start }}</a>
+        <a href="{{ url_for('api.compare_demo') }}?lang={{ lang }}" class="btn-secondary">{{ t_page.cta_compare }}</a>
+        <a href="{{ url_for('api.benchmark_demo') }}?lang={{ lang }}" class="btn-secondary">{{ t_page.cta_benchmark }}</a>
+    </div>
+</div>
+
+<!-- Problem -->
+<div class="card">
+    <h2>{{ t_page.problem_title }}</h2>
+    <p>{{ t_page.problem_text }}</p>
+</div>
+
+<!-- Solution -->
+<div class="card">
+    <h2>{{ t_page.solution_title }}</h2>
+    <p>{{ t_page.solution_text }}</p>
+</div>
+
+<!-- How -->
+<div class="card">
+    <h2>{{ t_page.how_title }}</h2>
+    <div class="grid">
+        <div class="metric-card"><h3>1. {{ t_page.step1 }}</h3><p>{{ t_page.step1_text }}</p></div>
+        <div class="metric-card"><h3>2. {{ t_page.step2 }}</h3><p>{{ t_page.step2_text }}</p></div>
+        <div class="metric-card"><h3>3. {{ t_page.step3 }}</h3><p>{{ t_page.step3_text }}</p></div>
+        <div class="metric-card"><h3>4. {{ t_page.step4 }}</h3><p>{{ t_page.step4_text }}</p></div>
+    </div>
+</div>
+
+<!-- Why -->
+<div class="card">
+    <h2>{{ t_page.why_title }}</h2>
+    <p>{{ t_page.why_text }}</p>
+</div>
+
+<!-- Modes -->
+<div class="card">
+    <h2>{{ t_page.modes_title }}</h2>
+
+    <div class="hero-mode-grid hero-mode-grid-large">
+
+        <a href="{{ url_for('api.home') }}?lang={{ lang }}" class="hero-mode-card">
+            <h3>{{ t_page.mode1 }}</h3>
+            <p>{{ t_page.mode1_text }}</p>
+        </a>
+
+        <a href="{{ url_for('api.compare_demo') }}?lang={{ lang }}" class="hero-mode-card">
+            <h3>{{ t_page.mode2 }}</h3>
+            <p>{{ t_page.mode2_text }}</p>
+        </a>
+
+        <a href="{{ url_for('api.benchmark_demo') }}?lang={{ lang }}" class="hero-mode-card">
+            <h3>{{ t_page.mode3 }}</h3>
+            <p>{{ t_page.mode3_text }}</p>
+        </a>
+
+        <a href="{{ url_for('api.custom_kpi_demo') }}?lang={{ lang }}" class="hero-mode-card">
+            <h3>{{ t_page.mode4 }}</h3>
+            <p>{{ t_page.mode4_text }}</p>
+        </a>
+
+        <a href="{{ url_for('api.ai_mapping_demo') }}?lang={{ lang }}" class="hero-mode-card">
+            <h3>{{ t_page.mode5 }}</h3>
+            <p>{{ t_page.mode5_text }}</p>
+        </a>
+
+    </div>
+</div>
+
+<!-- CTA -->
+<div class="card">
+    <h2>{{ t_page.closing_title }}</h2>
+    <p>{{ t_page.closing_text }}</p>
+
+    <div class="hero-actions" style="margin-top:16px;">
+        <a href="{{ url_for('api.home') }}?lang={{ lang }}" class="btn-primary">
+            {{ t_page.cta_final }}
+        </a>
+    </div>
+</div>
+
+{% endblock %}

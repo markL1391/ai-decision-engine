@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ "Chat – Explainable Decision Engine" if lang == "de" else "Chat – Explainable Decision Engine" }}
+{% endblock %}
+
+{% block content %}
+
+{% set t_page = {
+
+    "loading_title": "KI denkt nach" if lang == "de" else "AI is thinking",
+    "loading_text": "Deine Anfrage wird verarbeitet und mit der Systemanalyse verknüpft." if lang == "de" else "Processing your question and mapping it to the system analysis.",
+
+    "hero_badge": "Session Chat",
+    "hero_title": "Gespräch mit Systemkontext" if lang == "de" else "Context-Aware Chat",
+    "hero_tagline": "Dieser Chat nutzt deine letzte Analyse und behält den Verlauf bei." if lang == "de" else "This chat uses your latest analysis and retains conversation history.",
+
+    "how_title": "So funktioniert es" if lang == "de" else "How it works",
+    "how_text_1": "Stelle Folgefragen zu deiner Analyse – z. B. zu Engpässen, Risiken oder nächsten Schritten." if lang == "de" else "Ask follow-up questions about your analysis, such as bottlenecks, risks, or next steps.",
+    "how_text_2": "Führe zuerst eine Analyse durch, damit der Chat auf echten Systemdaten basiert." if lang == "de" else "Run an analysis first so the chat can respond based on real system data.",
+
+    "conversation": "Konversation" if lang == "de" else "Conversation",
+    "no_messages": "Noch keine Nachrichten." if lang == "de" else "No messages yet.",
+
+    "send": "Nachricht senden" if lang == "de" else "Send Message",
+    "message": "Nachricht" if lang == "de" else "Message",
+    "placeholder": "z. B. Was ist mein größter Engpass und warum?" if lang == "de" else "e.g. What is my strongest bottleneck and why?",
+
+    "submit": "Senden" if lang == "de" else "Send",
+    "clear": "Chat löschen" if lang == "de" else "Clear Chat",
+
+    "error": "Etwas ist schiefgelaufen. Bitte versuche es erneut." if lang == "de" else "Something went wrong. Please try again.",
+    "connection": "Verbindungsfehler. Bitte versuche es erneut." if lang == "de" else "Connection error. Please try again."
+
+} %}
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-network">
+        <div class="node node-1"></div>
+        <div class="node node-2"></div>
+        <div class="node node-3"></div>
+        <div class="node node-4"></div>
+        <div class="beam beam-1"></div>
+        <div class="beam beam-2"></div>
+        <div class="beam beam-3"></div>
+    </div>
+    <div class="loading-box">
+        <div class="loading-title">{{ t_page.loading_title }}</div>
+        <div class="loading-subtitle">{{ t_page.loading_text }}</div>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- Hero -->
+    <div class="card hero-card">
+        <div class="hero-badge">{{ t_page.hero_badge }}</div>
+        <h1>{{ t_page.hero_title }}</h1>
+        <p class="hero-tagline">{{ t_page.hero_tagline }}</p>
+    </div>
+
+    <!-- How it works -->
+    <div class="card">
+        <h2>{{ t_page.how_title }}</h2>
+        <p>{{ t_page.how_text_1 }}</p>
+        <p style="opacity: 0.8;">{{ t_page.how_text_2 }}</p>
+    </div>
+
+    <!-- Conversation -->
+    <div class="card">
+        <h2>{{ t_page.conversation }}</h2>
+
+        <div id="chatHistory">
+            {% if history %}
+                {% for item in history %}
+                <div class="metric-card {% if item.role == 'user' %}chat-user{% else %}chat-assistant{% endif %}"
+                     style="margin-bottom: 10px;">
+                    <strong>{{ item.role|capitalize }}:</strong>
+                    <p style="margin-top: 6px;">{{ item.content }}</p>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty-state">{{ t_page.no_messages }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Input -->
+    <div class="card">
+        <h2>{{ t_page.send }}</h2>
+
+        <form id="chatForm">
+            <label for="chatMessage">{{ t_page.message }}</label>
+            <textarea
+                id="chatMessage"
+                rows="4"
+                style="width: 100%; padding: 12px 14px; border-radius: 12px;
+                       border: 1px solid rgba(255,255,255,0.10);
+                       background: rgba(255,255,255,0.05); color: white;
+                       font-size: 15px; font-family: inherit; resize: vertical;"
+                placeholder="{{ t_page.placeholder }}"
+                required
+            ></textarea>
+
+            <button type="submit">{{ t_page.submit }}</button>
+        </form>
+
+        <button id="clearChatBtn"
+                style="margin-top: 12px; background: rgba(239,68,68,0.15);
+                box-shadow: none; border: 1px solid rgba(239,68,68,0.25); color: #ff9c9c;">
+            {{ t_page.clear }}
+        </button>
+    </div>
+
+</div>
+
+<script>
+const overlay       = document.getElementById("loadingOverlay");
+const chatForm      = document.getElementById("chatForm");
+const chatMessage   = document.getElementById("chatMessage");
+const clearChatBtn  = document.getElementById("clearChatBtn");
+
+if (chatForm) {
+    chatForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        const message = chatMessage.value.trim();
+        if (!message) return;
+
+        overlay.classList.add("active");
+
+        try {
+            const response = await fetch("/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message })
+            });
+
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                overlay.classList.remove("active");
+                alert("{{ t_page.error }}");
+            }
+        } catch (err) {
+            overlay.classList.remove("active");
+            alert("{{ t_page.connection }}");
+        }
+    });
+}
+
+if (clearChatBtn) {
+    clearChatBtn.addEventListener("click", async function () {
+        const response = await fetch("/chat/clear", { method: "POST" });
+        if (response.ok) {
+            window.location.reload();
+        }
+    });
+}
+</script>
+
+{% endblock %}

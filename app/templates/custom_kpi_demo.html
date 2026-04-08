@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ "Custom KPI Demo – Explainable Decision Engine" if lang == "de" else "Custom KPI Demo – Explainable Decision Engine" }}
+{% endblock %}
+
+{% block content %}
+
+{% set t_page = {
+
+    "hero_badge": "Custom KPI Modus" if lang == "de" else "Custom KPI Mode",
+    "hero_title": "Custom KPI Mapping" if lang == "de" else "Custom KPI Mapping",
+    "hero_tagline": "Nutze eigene KPIs und überführe sie in ein strukturelles Systemmodell." if lang == "de" else "Use your own KPIs and translate them into a structural system model.",
+    "hero_desc": "Definiere individuelle Kennzahlen, Schwellenwerte und Dimensionen, um Systeme flexibel und vergleichbar zu bewerten." if lang == "de" else "Define custom KPIs, thresholds, and dimensions to evaluate systems with a flexible and comparable scoring logic.",
+
+    "error": "Fehler" if lang == "de" else "Error",
+
+    "input_title": "Custom KPI Eingabe" if lang == "de" else "Custom KPI Input",
+    "kpi": "KPI",
+    "name": "Name",
+    "value": "Wert" if lang == "de" else "Value",
+    "direction": "Richtung" if lang == "de" else "Direction",
+    "dimension": "Dimension",
+    "threshold_3": "Schwelle für Score 3" if lang == "de" else "Threshold for score 3",
+    "threshold_2": "Schwelle für Score 2" if lang == "de" else "Threshold for score 2",
+    "threshold_1": "Schwelle für Score 1" if lang == "de" else "Threshold for score 1",
+
+    "lower": "niedriger ist besser" if lang == "de" else "lower is better",
+    "higher": "höher ist besser" if lang == "de" else "higher is better",
+
+    "run": "Analyse starten" if lang == "de" else "Run Custom Mapping",
+
+    "mapped": "Gemappte Indikatoren" if lang == "de" else "Mapped Indicators",
+    "dimension_label": "Dimension",
+
+    "result": "Ergebnis" if lang == "de" else "Result",
+    "readiness": "Gesamtreifegrad" if lang == "de" else "Overall Readiness",
+    "bottlenecks": "Engpässe" if lang == "de" else "Bottlenecks",
+    "none": "Keine" if lang == "de" else "None",
+
+    "technology": "Technologie" if lang == "de" else "Technology",
+    "process": "Prozess" if lang == "de" else "Process",
+    "responsibility": "Verantwortung" if lang == "de" else "Responsibility",
+    "adoption": "Akzeptanz" if lang == "de" else "Adoption"
+
+} %}
+
+<!-- Hero -->
+<div class="card hero-card">
+    <div class="hero-badge">{{ t_page.hero_badge }}</div>
+    <h1>{{ t_page.hero_title }}</h1>
+    <p class="hero-tagline">{{ t_page.hero_tagline }}</p>
+    <p class="hero-description">{{ t_page.hero_desc }}</p>
+</div>
+
+{% if error %}
+<div class="card">
+    <h2>{{ t_page.error }}</h2>
+    <p style="color:#ff6b6b;">{{ error }}</p>
+</div>
+{% endif %}
+
+<!-- Input -->
+<div class="card">
+    <h2>{{ t_page.input_title }}</h2>
+
+    <form method="POST" action="{{ url_for('api.custom_kpi_demo') }}?lang={{ lang }}">
+
+        {% for i in range(4) %}
+        <div class="metric-card" style="margin-bottom:16px;">
+            <h3>{{ t_page.kpi }} {{ i + 1 }}</h3>
+
+            <label>{{ t_page.name }}</label>
+            <input type="text" name="kpi_name" placeholder="e.g. Processing Time">
+
+            <label>{{ t_page.value }}</label>
+            <input type="number" step="0.1" name="kpi_value" placeholder="e.g. 18">
+
+            <label>{{ t_page.direction }}</label>
+            <select name="kpi_direction">
+                <option value="lower_better">{{ t_page.lower }}</option>
+                <option value="higher_better">{{ t_page.higher }}</option>
+            </select>
+
+            <label>{{ t_page.dimension }}</label>
+            <select name="kpi_dimension">
+                <option value="T">{{ t_page.technology }}</option>
+                <option value="P">{{ t_page.process }}</option>
+                <option value="R">{{ t_page.responsibility }}</option>
+                <option value="A">{{ t_page.adoption }}</option>
+            </select>
+
+            <label>{{ t_page.threshold_3 }}</label>
+            <input type="number" step="0.1" name="threshold_1">
+
+            <label>{{ t_page.threshold_2 }}</label>
+            <input type="number" step="0.1" name="threshold_2">
+
+            <label>{{ t_page.threshold_1 }}</label>
+            <input type="number" step="0.1" name="threshold_3">
+        </div>
+        {% endfor %}
+
+        <button type="submit">{{ t_page.run }}</button>
+    </form>
+</div>
+
+{% if indicators %}
+<!-- Indicators -->
+<div class="card">
+    <h2>{{ t_page.mapped }}</h2>
+
+    <div class="grid">
+        {% for item in indicators %}
+        <div class="metric-card">
+            <div>{{ item.indicator if item.indicator is defined else item["indicator"] }}</div>
+            <div style="margin-top:6px; color:#8fa1c2;">
+                {{ t_page.dimension_label }}: {{ item["dimension"] }}
+            </div>
+            <div class="metric-value">{{ item["value"] }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if result %}
+<!-- Result -->
+<div class="card">
+    <h2>{{ t_page.result }}</h2>
+
+    <p>
+        <strong>{{ t_page.readiness }}:</strong>
+        {{ "%.1f"|format(result.overall_readiness) }} / 3
+    </p>
+
+    <p>
+        <strong>{{ t_page.bottlenecks }}:</strong>
+        {{ result.bottlenecks | join(", ") if result.bottlenecks else t_page.none }}
+    </p>
+
+    <div class="grid" style="margin-top:14px;">
+        <div class="metric-card">
+            <div>{{ t_page.technology }}</div>
+            <div class="metric-value">{{ "%.1f"|format(result.dimension_scores["T"]) }}</div>
+        </div>
+
+        <div class="metric-card">
+            <div>{{ t_page.process }}</div>
+            <div class="metric-value">{{ "%.1f"|format(result.dimension_scores["P"]) }}</div>
+        </div>
+
+        <div class="metric-card">
+            <div>{{ t_page.responsibility }}</div>
+            <div class="metric-value">{{ "%.1f"|format(result.dimension_scores["R"]) }}</div>
+        </div>
+
+        <div class="metric-card">
+            <div>{{ t_page.adoption }}</div>
+            <div class="metric-value">{{ "%.1f"|format(result.dimension_scores["A"]) }}</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -25,7 +25,7 @@ import os
 from types import SimpleNamespace
 from typing import Any, Dict, List
 
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify, render_template, request, session
 from pydantic import ValidationError
 
 from app import db
@@ -47,11 +47,15 @@ from app.llm import (
     build_prompt,
     generate_compare_explanation_openai,
     generate_explanation_openai,
+    generate_explanation_openai_with_temperature,
+    generate_temperature_comparison_openai
 )
 from core.engine import run_deterministic_engine
 from core.mapping import map_metrics_to_indicators
 from core.rag import retrieve_context
 from core.output import OutputParseError, parse_llm_output
+from core.custom_mapping import map_custom_kpis_to_indicators
+from core.ai_mapping import suggest_dimension_for_kpi
 
 api_bp = Blueprint("api", __name__)
 
@@ -62,6 +66,56 @@ DIMENSION_DISPLAY = {
     "A": "Adoption",
 }
 
+TEXTS = {
+    "de": {
+        "hero_badge": "Erklärbare KI für operative Systeme",
+        "hero_title": "Explainable Decision Engine",
+        "hero_tagline": "Operative Kennzahlen in strukturelle Einsichten, sichtbare Engpässe und entscheidungsreifes Systemverständnis übersetzen.",
+        "hero_description": "Das System bewertet aktuelle Reifegrade, vergleicht Zukunftsszenarien, benchmarkt Unternehmen auf einer gemeinsamen Struktur und erlaubt sogar unternehmensspezifische KPI-Mappings.",
+        "mode_1_label": "Modus 1",
+        "mode_1_title": "Ist-Zustand analysieren",
+        "mode_1_text": "Bewerte den aktuellen Reifegrad deines Systems und identifiziere, welche strukturellen Engpässe die operative Stabilität begrenzen.",
+        "mode_2_label": "Modus 2",
+        "mode_2_title": "Szenarien vergleichen",
+        "mode_2_text": "Simuliere ein Vorher-Nachher-Szenario und prüfe, ob eine geplante Maßnahme die eigentlichen Bottlenecks wirklich beseitigt.",
+        "mode_3_label": "Modus 3",
+        "mode_3_title": "Unternehmen benchmarken",
+        "mode_3_text": "Vergleiche mehrere Unternehmen auf derselben strukturellen Logik und erkenne wiederkehrende Engpassprofile.",
+        "mode_4_label": "Modus 4",
+        "mode_4_title": "Custom KPI Mapping",
+        "mode_4_text": "Nutze unternehmensspezifische Kennzahlen und übersetze sie in dieselben universellen Systemdimensionen.",
+        "mode_5_label": "Modus 5",
+        "mode_5_title": "AI Mapping Helper",
+        "mode_5_text": "Lass das System für neue KPI-Namen eine erste strukturelle Zuordnung vorschlagen.",
+        "analyze_button": "Analyse starten",
+        "language_switch_de": "DE",
+        "language_switch_en": "EN",
+    },
+    "en": {
+        "hero_badge": "Explainable AI for operational systems",
+        "hero_title": "Explainable Decision Engine",
+        "hero_tagline": "Turn operational metrics into structural insight, visible bottlenecks, and decision-ready system understanding.",
+        "hero_description": "The system assesses current maturity, compares future scenarios, benchmarks companies on a shared structure, and even supports company-specific KPI mapping.",
+        "mode_1_label": "Mode 1",
+        "mode_1_title": "Analyze current state",
+        "mode_1_text": "Assess the current maturity of your system and identify which structural bottlenecks limit operational stability.",
+        "mode_2_label": "Mode 2",
+        "mode_2_title": "Compare scenarios",
+        "mode_2_text": "Simulate a before-and-after scenario and test whether a planned change actually removes the real bottlenecks.",
+        "mode_3_label": "Mode 3",
+        "mode_3_title": "Benchmark companies",
+        "mode_3_text": "Compare multiple companies on the same structural logic and identify recurring bottleneck patterns.",
+        "mode_4_label": "Mode 4",
+        "mode_4_title": "Custom KPI mapping",
+        "mode_4_text": "Use company-specific KPIs and translate them into the same universal system dimensions.",
+        "mode_5_label": "Mode 5",
+        "mode_5_title": "AI mapping helper",
+        "mode_5_text": "Let the system suggest an initial structural mapping for new KPI names.",
+        "analyze_button": "Start analysis",
+        "language_switch_de": "DE",
+        "language_switch_en": "EN",
+    }
+}
 
 # =============================================================================
 # Helper functions
@@ -123,6 +177,15 @@ def _build_comparison_payload(result_a: Dict[str, Any], result_b: Dict[str, Any]
     Returns:
         Dictionary containing score deltas and feasibility comparison.
     """
+    t_delta = round(result_b["dimension_scores"].get("T", 0) - result_a["dimension_scores"].get("T", 0), 2)
+    a_delta = round(result_b["dimension_scores"].get("A", 0) - result_a["dimension_scores"].get("A", 0), 2)
+
+    risk_alert_status = False
+    if t_delta >= 1.0 and a_delta <= 0.2:
+        risk_alert_status = True
+
+    critical_gap_value = round(t_delta - a_delta, 2)
+
     return {
         "r_delta": round(result_b["dimension_scores"].get("R", 0) - result_a["dimension_scores"].get("R", 0), 2),
         "p_delta": round(result_b["dimension_scores"].get("P", 0) - result_a["dimension_scores"].get("P", 0), 2),
@@ -133,8 +196,9 @@ def _build_comparison_payload(result_a: Dict[str, Any], result_b: Dict[str, Any]
         "bottleneck_b": result_b["bottlenecks"],
         "transition_feasible_a": result_a["transition_feasible"],
         "transition_feasible_b": result_b["transition_feasible"],
+        "risk_alert": risk_alert_status,
+        "critical_gap": critical_gap_value,
     }
-
 
 def _build_comparison_from_db(a: Assessment, b: Assessment) -> Dict[str, Any]:
     """
@@ -417,10 +481,75 @@ def _derive_reference_labels(retrieved_context: List[str]) -> List[str]:
 
     return labels
 
+def _build_demo_metrics_with_prefix(form_data, prefix: str) -> List[SimpleNamespace]:
+    """
+    Parse one prefixed HTML form section into Metric-like objects.
+
+    Example prefix:
+    - "a_" for scenario A
+    - "b_" for scenario B
+    """
+    return [
+        SimpleNamespace(name="automation_rate", value=float(form_data.get(f"{prefix}automation_rate"))),
+        SimpleNamespace(name="system_availability", value=float(form_data.get(f"{prefix}system_availability"))),
+        SimpleNamespace(name="error_rate", value=float(form_data.get(f"{prefix}error_rate"))),
+        SimpleNamespace(name="order_processing_time", value=float(form_data.get(f"{prefix}order_processing_time"))),
+        SimpleNamespace(name="process_standardization", value=form_data.get(f"{prefix}process_standardization")),
+        SimpleNamespace(name="role_clarity", value=form_data.get(f"{prefix}role_clarity")),
+        SimpleNamespace(name="ownership_definition", value=form_data.get(f"{prefix}ownership_definition")),
+        SimpleNamespace(name="training_coverage", value=float(form_data.get(f"{prefix}training_coverage"))),
+        SimpleNamespace(name="tool_adoption", value=float(form_data.get(f"{prefix}tool_adoption"))),
+        SimpleNamespace(name="change_communication", value=form_data.get(f"{prefix}change_communication")),
+    ]
+def _get_language() -> str:
+    """
+    Get the UI language from the query parameter.
+    Defaults to German.
+    """
+    lang = request.args.get("lang", "de").lower()
+    return "en" if lang == "en" else "de"
+
+def _get_session_chat_history() -> List[Dict[str, str]]:
+    """
+    Return the current session-based chat history.
+    """
+    return session.get("chat_history", [])
+
+
+def _save_session_chat_history(history: List[Dict[str, str]]) -> None:
+    """
+    Persist chat history in the Flask session.
+    """
+    session["chat_history"] = history
+    session.modified = True
+
+
+def _append_session_message(role: str, content: str) -> None:
+    """
+    Append one chat message to the session history.
+    """
+    history = _get_session_chat_history()
+    history.append({"role": role, "content": content})
+    _save_session_chat_history(history)
+
+
+def _clear_session_chat_history() -> None:
+    """
+    Clear chat history in the current session.
+    """
+    session.pop("chat_history", None)
+    session.modified = True
 
 # =============================================================================
 # Frontend / demo routes
 # =============================================================================
+@api_bp.route("/landing")
+def landing():
+    lang = _get_language()
+    return render_template(
+        "landing.html",
+        lang=lang,
+    )
 
 @api_bp.route("/", methods=["GET"])
 def home():
@@ -429,8 +558,23 @@ def home():
 
     This route exists mainly for demo and presentation purposes.
     """
-    return render_template("index.html")
-
+    lang = _get_language()
+    texts = TEXTS[lang]
+    return render_template(
+        "index.html",
+        lang=lang,
+        texts=texts,
+        result=None,
+        assessment=None,
+        summary=None,
+        priorities=[],
+        lever=None,
+        risk=None,
+        next_step=None,
+        references=[],
+        input_metrics=None,
+        indicator_view=[],
+    )
 
 @api_bp.route("/demo", methods=["POST"])
 def demo():
@@ -446,15 +590,13 @@ def demo():
     6. Validate via output.py
     7. Render the frontend with all expected fields
     """
+
+    lang = _get_language()
+    texts = TEXTS[lang]
     metrics = _build_demo_metrics(request.form)
     mapped_indicators = map_metrics_to_indicators(metrics)
     result = run_deterministic_engine(mapped_indicators, target_level=2)
-
-    assessment = SimpleNamespace(
-        company_id=request.form.get("company_id", "Demo Company"),
-        industry=request.form.get("industry"),
-        target_level=2,
-    )
+    indicator_view = mapped_indicators
 
     summary = _build_demo_summary(result)
     priorities = []
@@ -462,6 +604,33 @@ def demo():
     risk = None
     next_step = None
     references = []
+
+    input_metrics = {
+        "automation_rate": float(request.form.get("automation_rate")),
+        "system_availability": float(request.form.get("system_availability")),
+        "error_rate": float(request.form.get("error_rate")),
+        "order_processing_time": float(request.form.get("order_processing_time")),
+        "process_standardization": request.form.get("process_standardization"),
+        "role_clarity": request.form.get("role_clarity"),
+        "ownership_definition": request.form.get("ownership_definition"),
+        "training_coverage": float(request.form.get("training_coverage")),
+        "tool_adoption": float(request.form.get("tool_adoption")),
+        "change_communication": request.form.get("change_communication"),
+    }
+
+    session["engine_result"] = result
+    session["assessment_context"] = {
+        "company_id": request.form.get("company_id", "Demo Company"),
+        "industry": request.form.get("industry", ""),
+    }
+    session["last_summary"] = summary
+    session.modified = True
+
+    assessment = SimpleNamespace(
+        company_id=request.form.get("company_id", "Demo Company"),
+        industry=request.form.get("industry"),
+        target_level=2,
+    )
 
     api_key = os.getenv("OPENAI_API_KEY")
 
@@ -515,75 +684,103 @@ def demo():
         risk=risk,
         next_step=next_step,
         references=references,
+        input_metrics=input_metrics,
+        indicator_view=indicator_view,
+        lang=lang,
+        texts=texts,
     )
 
-@api_bp.route("/compare-demo", methods=["GET"])
+@api_bp.route("/compare-demo", methods=["GET", "POST"])
 def compare_demo():
     """
-    Render a predefined comparison demo in the frontend.
+    Minimal compare demo without database persistence.
 
-    This route is useful for showcasing use-case-specific comparative analysis
-    without requiring manual data entry first.
+    This route allows users to compare:
+    - Scenario A = current state
+    - Scenario B = future / implementation scenario
+
+    Flow:
+    1. Parse both form sections
+    2. Run deterministic engine for A and B
+    3. Build comparison payload
+    4. Optionally generate AI comparison explanation
+    5. Render compare demo template
     """
-    case_a = [
-        SimpleNamespace(name="automation_rate", value=28.0),
-        SimpleNamespace(name="system_availability", value=91.0),
-        SimpleNamespace(name="error_rate", value=11.5),
-        SimpleNamespace(name="order_processing_time", value=24.0),
-        SimpleNamespace(name="process_standardization", value="low"),
-        SimpleNamespace(name="role_clarity", value="partial"),
-        SimpleNamespace(name="ownership_definition", value="informal"),
-        SimpleNamespace(name="training_coverage", value=40.0),
-        SimpleNamespace(name="tool_adoption", value=35.0),
-        SimpleNamespace(name="change_communication", value="irregular"),
-    ]
+    lang = _get_language()
+    texts = TEXTS[lang]
+    template_context = {
+        "scenario_a": None,
+        "scenario_b": None,
+        "result_a": None,
+        "result_b": None,
+        "comparison": None,
+        "compare_explanation": None,
+        "error": None,
+    }
 
-    case_b = [
-        SimpleNamespace(name="automation_rate", value=55.0),
-        SimpleNamespace(name="system_availability", value=96.0),
-        SimpleNamespace(name="error_rate", value=5.2),
-        SimpleNamespace(name="order_processing_time", value=15.0),
-        SimpleNamespace(name="process_standardization", value="medium"),
-        SimpleNamespace(name="role_clarity", value="clear"),
-        SimpleNamespace(name="ownership_definition", value="formal"),
-        SimpleNamespace(name="training_coverage", value=68.0),
-        SimpleNamespace(name="tool_adoption", value=62.0),
-        SimpleNamespace(name="change_communication", value="structured"),
-    ]
+    if request.method == "GET":
+        return render_template("compare_demo.html", **template_context)
 
-    mapped_a = map_metrics_to_indicators(case_a)
-    mapped_b = map_metrics_to_indicators(case_b)
+    try:
+        metrics_a = _build_demo_metrics_with_prefix(request.form, "a_")
+        metrics_b = _build_demo_metrics_with_prefix(request.form, "b_")
 
-    result_a = run_deterministic_engine(mapped_a, target_level=2)
-    result_b = run_deterministic_engine(mapped_b, target_level=2)
+        mapped_a = map_metrics_to_indicators(metrics_a)
+        mapped_b = map_metrics_to_indicators(metrics_b)
 
-    comparison = _build_comparison_payload(result_a, result_b)
+        result_a = run_deterministic_engine(mapped_a, target_level=2)
+        result_b = run_deterministic_engine(mapped_b, target_level=2)
 
-    compare_explanation = None
-    api_key = os.getenv("OPENAI_API_KEY")
+        comparison = _build_comparison_payload(result_a, result_b)
 
-    if api_key:
-        try:
-            compare_explanation = generate_compare_explanation_openai(
-                api_key=api_key,
-                comparison=comparison,
-            )
-        except Exception as e:
-            compare_explanation = {
-                "summary": "The comparison explanation could not be generated.",
-                "main_improvements": [str(e)],
-                "transition_impact": [],
+        compare_explanation = None
+        api_key = os.getenv("OPENAI_API_KEY")
+
+        if api_key:
+            try:
+                compare_explanation = generate_compare_explanation_openai(
+                    api_key=api_key,
+                    comparison=comparison,
+                )
+            except Exception as e:
+                compare_explanation = {
+                    "summary": "The comparison explanation could not be generated.",
+                    "main_improvements": [str(e)],
+                    "transition_impact": [],
+                }
+
+        scenario_a = SimpleNamespace(
+            company_id=request.form.get("a_company_id", "Scenario A"),
+            industry=request.form.get("a_industry"),
+        )
+
+        scenario_b = SimpleNamespace(
+            company_id=request.form.get("b_company_id", "Scenario B"),
+            industry=request.form.get("b_industry"),
+        )
+
+        template_context.update(
+            {
+                "scenario_a": scenario_a,
+                "scenario_b": scenario_b,
+                "result_a": result_a,
+                "result_b": result_b,
+                "comparison": comparison,
+                "compare_explanation": compare_explanation,
             }
+        )
 
-    return render_template(
-        "index.html",
-        compare_mode=True,
-        result_a=result_a,
-        result_b=result_b,
-        comparison=comparison,
-        compare_explanation=compare_explanation,
-    )
+        return render_template(
+            "compare_demo.html",
+            lang=lang,
+            texts=texts,
+            **template_context
+        )
 
+
+    except Exception as e:
+        template_context["error"] = f"Compare demo failed: {e}"
+        return render_template("compare_demo.html", **template_context)
 
 # =============================================================================
 # API routes
@@ -630,6 +827,8 @@ def analyze_assessment():
 
     assessment = saved["assessment"]
     engine_result = saved["engine_result"]
+    session["assessment_id"] = assessment.id
+    session.modified = True
 
     return jsonify({
         "message": "Assessment created and analyzed successfully",
@@ -643,6 +842,11 @@ def analyze_assessment():
             "bottleneck_details": engine_result["bottleneck_details"],
             "transition_feasible": engine_result["transition_feasible"],
             "transition_risk": engine_result["transition_risk"],
+            "strengths": engine_result["strengths"],
+            "weaknesses": engine_result["weaknesses"],
+            "cross_dimension_insights": engine_result["cross_dimension_insights"],
+            "executive_summary": engine_result["executive_summary"],
+            "leverage_explanation": engine_result["leverage_explanation"],
         },
     }), 201
 
@@ -661,7 +865,6 @@ def get_assessment(assessment_id: int):
     return jsonify(_serialize_assessment(assessment)), 200
 
 
-@api_bp.route("/explanations/generate", methods=["POST"])
 @api_bp.route("/explanations/generate", methods=["POST"])
 def generate_explanation():
     """
@@ -871,3 +1074,521 @@ def compare_and_explain():
         "prompt_preview": prompt_preview,
         "explanation": explanation,
     }), 200
+
+@api_bp.route("/benchmark-demo", methods=["GET"])
+def benchmark_demo():
+    """
+    Demo route for multi-company benchmarking.
+
+    This route runs a set of predefined company scenarios through the
+    deterministic pipeline and renders a comparative benchmark view.
+    """
+    lang = _get_language()
+    texts = TEXTS[lang]
+    benchmark_cases = [
+        {
+            "name": "QuickDrop Logistics",
+            "industry": "logistics",
+            "metrics": [
+                SimpleNamespace(name="automation_rate", value=32.0),
+                SimpleNamespace(name="system_availability", value=92.0),
+                SimpleNamespace(name="error_rate", value=8.5),
+                SimpleNamespace(name="order_processing_time", value=24.0),
+                SimpleNamespace(name="process_standardization", value="low"),
+                SimpleNamespace(name="role_clarity", value="partial"),
+                SimpleNamespace(name="ownership_definition", value="informal"),
+                SimpleNamespace(name="training_coverage", value=45.0),
+                SimpleNamespace(name="tool_adoption", value=52.0),
+                SimpleNamespace(name="change_communication", value="irregular"),
+            ],
+        },
+        {
+            "name": "MediNow Pharmacy",
+            "industry": "healthcare",
+            "metrics": [
+                SimpleNamespace(name="automation_rate", value=41.0),
+                SimpleNamespace(name="system_availability", value=95.0),
+                SimpleNamespace(name="error_rate", value=6.5),
+                SimpleNamespace(name="order_processing_time", value=20.0),
+                SimpleNamespace(name="process_standardization", value="medium"),
+                SimpleNamespace(name="role_clarity", value="partial"),
+                SimpleNamespace(name="ownership_definition", value="formal"),
+                SimpleNamespace(name="training_coverage", value=62.0),
+                SimpleNamespace(name="tool_adoption", value=58.0),
+                SimpleNamespace(name="change_communication", value="structured"),
+            ],
+        },
+        {
+            "name": "FlowCart Commerce",
+            "industry": "startup",
+            "metrics": [
+                SimpleNamespace(name="automation_rate", value=55.0),
+                SimpleNamespace(name="system_availability", value=96.0),
+                SimpleNamespace(name="error_rate", value=7.0),
+                SimpleNamespace(name="order_processing_time", value=18.0),
+                SimpleNamespace(name="process_standardization", value="medium"),
+                SimpleNamespace(name="role_clarity", value="clear"),
+                SimpleNamespace(name="ownership_definition", value="informal"),
+                SimpleNamespace(name="training_coverage", value=71.0),
+                SimpleNamespace(name="tool_adoption", value=78.0),
+                SimpleNamespace(name="change_communication", value="structured"),
+            ],
+        },
+        {
+            "name": "Nordic Manufacturing Group",
+            "industry": "manufacturing",
+            "metrics": [
+                SimpleNamespace(name="automation_rate", value=68.0),
+                SimpleNamespace(name="system_availability", value=97.0),
+                SimpleNamespace(name="error_rate", value=4.2),
+                SimpleNamespace(name="order_processing_time", value=14.0),
+                SimpleNamespace(name="process_standardization", value="high"),
+                SimpleNamespace(name="role_clarity", value="clear"),
+                SimpleNamespace(name="ownership_definition", value="formal"),
+                SimpleNamespace(name="training_coverage", value=64.0),
+                SimpleNamespace(name="tool_adoption", value=59.0),
+                SimpleNamespace(name="change_communication", value="structured"),
+            ],
+        },
+        {
+            "name": "ScaleOS Tech Services",
+            "industry": "tech",
+            "metrics": [
+                SimpleNamespace(name="automation_rate", value=74.0),
+                SimpleNamespace(name="system_availability", value=98.0),
+                SimpleNamespace(name="error_rate", value=3.0),
+                SimpleNamespace(name="order_processing_time", value=12.0),
+                SimpleNamespace(name="process_standardization", value="medium"),
+                SimpleNamespace(name="role_clarity", value="clear"),
+                SimpleNamespace(name="ownership_definition", value="formal"),
+                SimpleNamespace(name="training_coverage", value=84.0),
+                SimpleNamespace(name="tool_adoption", value=82.0),
+                SimpleNamespace(name="change_communication", value="embedded"),
+            ],
+        },
+    ]
+
+    dimension_labels = {
+        "T": "Technology",
+        "P": "Process",
+        "R": "Responsibility",
+        "A": "Adoption",
+    }
+
+    benchmark_results = []
+
+    for case in benchmark_cases:
+        mapped = map_metrics_to_indicators(case["metrics"])
+        result = run_deterministic_engine(mapped, target_level=2)
+
+        scores = result["dimension_scores"]
+        weakest_dim = min(scores, key=scores.get) if scores else None
+        strongest_dim = max(scores, key=scores.get) if scores else None
+
+        benchmark_results.append({
+            "name": case["name"],
+            "industry": case["industry"],
+            "overall_readiness": result["overall_readiness"],
+            "transition_feasible": result["transition_feasible"],
+            "transition_risk": result["transition_risk"],
+            "bottlenecks": result["bottlenecks"],
+            "scores": scores,
+            "weakest_dimension": dimension_labels.get(weakest_dim, weakest_dim),
+            "strongest_dimension": dimension_labels.get(strongest_dim, strongest_dim),
+        })
+
+    benchmark_results.sort(key=lambda x: x["overall_readiness"], reverse=True)
+
+    return render_template(
+        "benchmark_demo.html",
+        benchmark_results=benchmark_results,
+        lang=lang,
+        texts=texts,
+    )
+
+@api_bp.route("/custom-kpi-demo", methods=["GET", "POST"])
+def custom_kpi_demo():
+    """
+    Demo route for user-defined KPI mapping.
+    """
+    lang = _get_language()
+    texts = TEXTS[lang]
+    if request.method == "GET":
+        return render_template("custom_kpi_demo.html")
+
+    try:
+        custom_kpis = []
+
+        names = request.form.getlist("kpi_name")
+        values = request.form.getlist("kpi_value")
+        directions = request.form.getlist("kpi_direction")
+        dimensions = request.form.getlist("kpi_dimension")
+        t1s = request.form.getlist("threshold_1")
+        t2s = request.form.getlist("threshold_2")
+        t3s = request.form.getlist("threshold_3")
+
+        for i in range(len(names)):
+            if not names[i].strip():
+                continue
+
+            custom_kpis.append({
+                "name": names[i],
+                "value": float(values[i]),
+                "direction": directions[i],
+                "dimension": dimensions[i],
+                "thresholds": [float(t1s[i]), float(t2s[i]), float(t3s[i])],
+            })
+
+        indicators = map_custom_kpis_to_indicators(custom_kpis)
+        result = run_deterministic_engine(indicators, target_level=2)
+
+        return render_template(
+            "custom_kpi_demo.html",
+            custom_kpis=custom_kpis,
+            indicators=indicators,
+            result=result,
+            lang=lang,
+            texts=texts,
+        )
+
+    except Exception as e:
+        return render_template(
+            "custom_kpi_demo.html",
+            error=f"Custom KPI demo failed: {e}",
+        )
+
+@api_bp.route("/ai-mapping-demo", methods=["GET", "POST"])
+def ai_mapping_demo():
+    """
+    Demo route for simple AI-assisted KPI-to-dimension suggestions.
+    """
+    lang = _get_language()
+    texts = TEXTS[lang]
+    suggestion = None
+
+    if request.method == "POST":
+        kpi_name = request.form.get("kpi_name", "")
+        if kpi_name.strip():
+            suggestion = suggest_dimension_for_kpi(kpi_name)
+
+    return render_template(
+        "ai_mapping_demo.html",
+        suggestion=suggestion,
+        lang=lang,
+        texts=texts,
+    )
+
+@api_bp.route("/chat", methods=["GET"])
+def chat_view():
+    """
+    Render a simple chat page that shows the current session-based conversation history.
+    """
+    history = _get_session_chat_history()
+    return render_template("chat.html", history=history)
+
+@api_bp.route("/chat", methods=["POST"])
+def chat_post():
+    """
+    Session-based product chat.
+
+    This chat does not answer generically.
+    It answers based on the most recent deterministic system analysis
+    stored in the current Flask session.
+
+    Flow:
+    1. read user message
+    2. load engine_result + assessment context from session
+    3. load chat history from session
+    4. build a grounded prompt using the actual analysis result
+    5. generate assistant response
+    6. store both user and assistant messages in session
+    7. optionally persist to DB if assessment_id exists in session
+    """
+    data = request.get_json(silent=True)
+
+    if not data or not data.get("message"):
+        return _error_response("Missing chat message", 400)
+
+    user_message = data["message"].strip()
+    if not user_message:
+        return _error_response("Empty chat message", 400)
+
+    engine_result = session.get("engine_result")
+    assessment_context = session.get("assessment_context", {})
+    last_summary = session.get("last_summary", "")
+
+    if not engine_result:
+        return _error_response(
+            "No analysis context found. Please run an analysis first before using the chat.",
+            400,
+        )
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return _error_response("OPENAI_API_KEY is not configured.", 500)
+
+    history = _get_session_chat_history()
+    history.append({"role": "user", "content": user_message})
+
+    # Only keep recent history compact enough for prompt quality
+    recent_history = history[-8:]
+
+    history_block = "\n".join(
+        f"{msg['role'].upper()}: {msg['content']}"
+        for msg in recent_history
+    )
+
+    company_id = assessment_context.get("company_id", "Unknown company")
+    industry = assessment_context.get("industry", "Unknown industry")
+
+    scores = engine_result.get("dimension_scores", {})
+    bottlenecks = engine_result.get("bottlenecks", [])
+    overall_readiness = engine_result.get("overall_readiness", 0.0)
+    transition_feasible = engine_result.get("transition_feasible", False)
+    transition_risk = engine_result.get("transition_risk", "unknown")
+    required_changes = engine_result.get("required_changes", {})
+    required_capacities = engine_result.get("required_capacities", {})
+    bottleneck_details = engine_result.get("bottleneck_details", {})
+    maturity_descriptions = engine_result.get("maturity_descriptions", {})
+
+    system_context = f"""
+System analysis context for the current company:
+
+Company: {company_id}
+Industry: {industry}
+
+Dimension scores:
+{json.dumps(scores)}
+
+Maturity descriptions:
+{json.dumps(maturity_descriptions)}
+
+Overall readiness:
+{overall_readiness}
+
+Transition feasible:
+{transition_feasible}
+
+Transition risk:
+{transition_risk}
+
+Bottlenecks:
+{json.dumps(bottlenecks)}
+
+Required changes:
+{json.dumps(required_changes)}
+
+Required capacities:
+{json.dumps(required_capacities)}
+
+Bottleneck details:
+{json.dumps(bottleneck_details)}
+
+Latest summary:
+{last_summary}
+""".strip()
+
+    prompt = f"""
+You are the built-in analyst of an Explainable Decision Engine.
+
+You must answer ONLY based on the provided system analysis context.
+Do not behave like a generic assistant.
+Do not give generic consulting advice.
+Do not tell the user to analyse things that are already known from the result.
+
+Your role:
+- explain the current result
+- answer follow-up questions about bottlenecks, scores, priorities, risks, strengths, and next steps
+- stay grounded in the actual company result
+- be concrete and operational
+- if the user asks "what is my strongest bottleneck", answer directly from the scores and bottlenecks
+- if the user asks "what should I fix first", answer using the weakest dimensions and required capacities
+- if the user asks about risks, explain them in relation to the current result
+- if the user asks something unrelated to the analysis, answer briefly and redirect to the available system context
+
+Style:
+- concise
+- direct
+- no buzzwords
+- no generic management fluff
+- no numbered consulting frameworks unless explicitly helpful
+- do not invent missing data
+
+{system_context}
+
+Conversation history:
+{history_block}
+
+Current user message:
+{user_message}
+""".strip()
+
+    try:
+        from openai import OpenAI
+
+        client = OpenAI(api_key=api_key)
+
+        response = client.responses.create(
+            model="gpt-4o-mini",
+            input=[
+                {
+                    "role": "developer",
+                    "content": (
+                        "You are a product-embedded analyst for an explainable operational decision engine. "
+                        "You must answer based on the supplied analysis result. "
+                        "Never default to generic business advice when the system context already contains the answer. "
+                        "Be specific, grounded, and concise."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": prompt,
+                },
+            ],
+        )
+
+        assistant_message = response.output_text.strip()
+
+    except Exception as e:
+        return _error_response("Chat generation failed", 500, str(e))
+
+    history.append({"role": "assistant", "content": assistant_message})
+    _save_session_chat_history(history)
+
+    # Optional DB persistence if a session assessment id exists
+    assessment_id = session.get("assessment_id")
+    if assessment_id:
+        try:
+            _store_conversation_turn(
+                assessment_id=assessment_id,
+                role="user",
+                content=user_message,
+            )
+            _store_conversation_turn(
+                assessment_id=assessment_id,
+                role="assistant",
+                content=assistant_message,
+            )
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+    return jsonify({
+        "message": assistant_message,
+        "history": history,
+    }), 200
+
+@api_bp.route("/chat/clear", methods=["POST"])
+def clear_chat():
+    """
+    Clear the session-based chat history.
+    """
+    _clear_session_chat_history()
+    return jsonify({"message": "Chat history cleared"}), 200
+
+@api_bp.route("/temperature-demo", methods=["GET"])
+def temperature_demo():
+    """
+    Render the temperature comparison demo page.
+
+    This page lets the user compare two LLM outputs for the same assessment
+    using different temperature values.
+    """
+    assessments = Assessment.query.all()
+    lang = _get_language()
+
+    return render_template(
+        "temperature_demo.html",
+        assessments=assessments,
+        lang=lang,
+    )
+
+
+@api_bp.route("/explanations/compare-temperature", methods=["POST"])
+def compare_temperature():
+    """
+    Compare two explanation outputs for the same assessment using
+    two different temperature settings.
+
+    Expected JSON body:
+    {
+        "assessment_id": 1,
+        "temperature_a": 0.2,
+        "temperature_b": 0.8
+    }
+    """
+    data = request.get_json(silent=True)
+
+    if not data:
+        return jsonify({"error": "Invalid or missing JSON body"}), 400
+
+    assessment_id = data.get("assessment_id")
+    temperature_a = data.get("temperature_a")
+    temperature_b = data.get("temperature_b")
+
+    if assessment_id is None:
+        return jsonify({"error": "assessment_id is required"}), 400
+
+    if temperature_a is None or temperature_b is None:
+        return jsonify({"error": "temperature_a and temperature_b are required"}), 400
+
+    try:
+        assessment_id = int(assessment_id)
+        temperature_a = float(temperature_a)
+        temperature_b = float(temperature_b)
+    except (TypeError, ValueError):
+        return jsonify({"error": "assessment_id must be int and temperatures must be numeric"}), 400
+
+    if not (0 <= temperature_a <= 2) or not (0 <= temperature_b <= 2):
+        return jsonify({"error": "temperature values must be between 0 and 2"}), 400
+
+    assessment = Assessment.query.get(assessment_id)
+    if not assessment:
+        return jsonify({"error": "Assessment not found"}), 404
+
+    if not assessment.metrics:
+        return jsonify({"error": "Assessment has no metrics"}), 404
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return jsonify({"error": "OPENAI_API_KEY is not configured"}), 500
+
+    try:
+        # Rebuild deterministic result from stored metrics
+        mapped_indicators = map_metrics_to_indicators(assessment.metrics)
+        engine_result = run_deterministic_engine(
+            mapped_indicators,
+            assessment.target_level,
+        )
+
+        retrieved_context = retrieve_context(engine_result)
+
+        # Generate both outputs
+        comparison_result = generate_temperature_comparison_openai(
+            api_key=api_key,
+            engine_result=engine_result,
+            retrieved_context=retrieved_context,
+            temperature_a=temperature_a,
+            temperature_b=temperature_b,
+        )
+
+        return jsonify({
+            "assessment_id": assessment.id,
+            "temperature_a": temperature_a,
+            "temperature_b": temperature_b,
+            "engine_result": {
+                "bottlenecks": engine_result["bottlenecks"],
+                "transition_feasible": engine_result["transition_feasible"],
+                "transition_risk": engine_result["transition_risk"],
+            },
+            "output_a": comparison_result["output_a"],
+            "output_b": comparison_result["output_b"],
+            "model_name": comparison_result["model_name"],
+            "prompt_version": comparison_result["prompt_version"],
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "error": "Temperature comparison failed",
+            "details": str(e),
+        }), 500

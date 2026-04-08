@@ -24,6 +24,12 @@ from typing import Any, Dict, List
 # =============================================================================
 # Static reference models
 # =============================================================================
+DIMENSION_LABELS = {
+    "T": "Technology",
+    "P": "Process",
+    "R": "Responsibility",
+    "A": "Adoption",
+}
 
 MATURITY_MODEL = {
     "T": {
@@ -278,6 +284,85 @@ def add_maturity_descriptions(scores: Dict[str, float]) -> Dict[str, str]:
 
     return descriptions
 
+def classify_dimensions(dimension_scores: dict[str, float]):
+    strengths = []
+    weaknesses = []
+    neutral = []
+
+    for dimension, score in dimension_scores.items():
+        if score <= 1.3:
+            weaknesses.append(dimension)
+        elif score >= 2.0:
+            strengths.append(dimension)
+        else:
+            neutral.append(dimension)
+
+    return strengths, weaknesses, neutral
+
+def derive_cross_dimension_insights(strengths: List[str], weaknesses: List[str]) -> List[str]:
+    """
+    Derive strategic cross-dimension insights.
+
+    This links strong dimensions with weak ones to identify leverage effects.
+    """
+    insights = []
+
+    if "A" in strengths and "T" in weaknesses:
+        insights.append(
+            "Acceptance is already strong and can be used to accelerate technology adoption and implementation."
+        )
+
+    if "P" in strengths and "T" in weaknesses:
+        insights.append(
+            "Stable processes can reduce implementation risk while technology capabilities are upgraded."
+        )
+
+    if "R" in strengths and "A" in weaknesses:
+        insights.append(
+            "Clear ownership can be used to strengthen acceptance and alignment during change."
+        )
+
+    if "R" in strengths and "P" in weaknesses:
+        insights.append(
+            "Strong ownership can help enforce more consistent process execution."
+        )
+
+    if "T" in strengths and "A" in weaknesses:
+        insights.append(
+            "Existing technology strength can support adoption if communication and enablement are improved."
+        )
+
+    return insights
+
+
+def build_executive_summary(result: Dict[str, Any]) -> str:
+    weakest_key = result["weaknesses"][0] if result.get("weaknesses") else None
+    strongest_key = result["strengths"][0] if result.get("strengths") else None
+
+    weakest = DIMENSION_LABELS.get(weakest_key, "no major constraint")
+    strongest = DIMENSION_LABELS.get(strongest_key, "no strong leverage")
+    readiness = result.get("overall_readiness", 0)
+
+    return f"""
+The current system shows an overall readiness of {readiness:.1f}.
+
+The primary constraint lies in {weakest}, limiting reliable execution and scalability.
+At the same time, {strongest} represents a key strength that can be leveraged to accelerate improvements.
+
+Focusing on resolving the main constraint while utilising existing strengths will enable faster and more sustainable system development.
+""".strip()
+
+
+def build_leverage_explanation(result: Dict[str, Any]) -> str:
+    if result.get("cross_dimension_insights"):
+        return result["cross_dimension_insights"][0]
+
+    if result.get("strengths"):
+        strongest_key = result["strengths"][0]
+        strongest = DIMENSION_LABELS.get(strongest_key, strongest_key)
+        return f"{strongest} can be used as the main leverage point to stabilise weaker dimensions and support the transition."
+
+    return "No clear leverage point has been identified yet."
 
 # =============================================================================
 # Main orchestration function
@@ -310,8 +395,10 @@ def run_deterministic_engine(indicators: List[Dict[str, Any]], target_level: int
         required_capacities,
     )
     maturity_descriptions = add_maturity_descriptions(scores)
+    strengths, weaknesses, neutral = classify_dimensions(scores)
+    cross_dimension_insights = derive_cross_dimension_insights(strengths, weaknesses)
 
-    return {
+    result = {
         "dimension_scores": scores,
         "maturity_descriptions": maturity_descriptions,
         "overall_readiness": overall,
@@ -321,4 +408,13 @@ def run_deterministic_engine(indicators: List[Dict[str, Any]], target_level: int
         "required_changes": required_changes,
         "required_capacities": required_capacities,
         "bottleneck_details": bottleneck_details,
+        "strengths": strengths,
+        "weaknesses": weaknesses,
+        "neutral": neutral,
+        "cross_dimension_insights": cross_dimension_insights,
     }
+
+    result["executive_summary"] = build_executive_summary(result)
+    result["leverage_explanation"] = build_leverage_explanation(result)
+
+    return result

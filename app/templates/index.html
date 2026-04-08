@@ -1,22 +1,13 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Explainable Decision Engine</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
+{% extends "base.html" %}
 
+{% block title %}Analyze – Explainable Engine{% endblock %}
+
+{% block content %}
+
+<!-- Loading Overlay -->
 <div id="loadingOverlay" class="loading-overlay">
     <div class="loading-network">
         <div class="node node-1"></div>
-        <div class="node node-2"></div>
-        <div class="node node-3"></div>
-        <div class="node node-4"></div>
-        <div class="beam beam-1"></div>
-        <div class="beam beam-2"></div>
-        <div class="beam beam-3"></div>
     </div>
     <div class="loading-box">
         <div class="loading-title">AI is revealing hidden system constraints</div>
@@ -26,283 +17,489 @@
     </div>
 </div>
 
-<div class="container">
-
-    <!-- Hero -->
-    <div class="card hero-card">
-        <h1>Explainable Decision Engine</h1>
-        <p class="hero-tagline">
-            Connecting fragmented signals, revealing hidden bottlenecks, and making system constraints visible.
-        </p>
-        <p>
-            Gib reale operative Kennzahlen ein. Das System übersetzt sie in strukturelle Zusammenhänge,
-            identifiziert Engpässe und zeigt, was eure Skalierung konkret blockiert.
-        </p>
+<!-- ── Hero ──────────────────────────────────────────────── -->
+<div class="card hero-card">
+    <div class="hero-badge">
+        {{ texts.hero_badge if texts is defined else 'Explainable AI · Operational Systems' }}
     </div>
 
-    <!-- Input Form -->
-    <div class="card">
-        <h2>Input Metrics</h2>
-        <form method="POST" action="/demo" id="assessmentForm">
-            <div class="form-grid">
+    <h1>{{ texts.hero_title if texts is defined else 'Explainable Decision Engine' }}</h1>
 
-                <div>
-                    <label for="company_id">Unternehmen</label>
-                    <input id="company_id" name="company_id" type="text" placeholder="z.B. Muster GmbH" required>
-                </div>
+    <p class="hero-tagline">
+        {{ texts.hero_tagline if texts is defined else 'Turn operational metrics into structural insight, visible bottlenecks, and decision-ready system understanding.' }}
+    </p>
+</div>
 
-                <div>
-                    <label for="industry">Branche</label>
-                    <input id="industry" name="industry" type="text" placeholder="z.B. Logistik">
-                    <div class="help">Optional – verbessert die KI-Empfehlung</div>
-                </div>
+<!-- ── Input Form ─────────────────────────────────────────── -->
+<div class="card">
+    <h2>{{ texts.input_metrics_title if texts is defined else 'Input Metrics' }}</h2>
 
-                <div>
-                    <label for="automation_rate">Automation Rate (%)</label>
-                    <input id="automation_rate" name="automation_rate" type="number" min="0" max="100" step="1" required>
-                    <div class="help">Anteil automatisierter Abläufe</div>
-                </div>
+    <form method="POST" action="{{ url_for('api.demo', lang=lang) }}" id="assessmentForm">
+        <div class="form-grid">
 
-                <div>
-                    <label for="system_availability">System Availability (%)</label>
-                    <input id="system_availability" name="system_availability" type="number" min="0" max="100" step="1" required>
-                    <div class="help">Systemverfügbarkeit im Betrieb</div>
-                </div>
-
-                <div>
-                    <label for="error_rate">Error Rate (%)</label>
-                    <input id="error_rate" name="error_rate" type="number" min="0" max="100" step="0.1" required>
-                    <div class="help">Fehlerquote im Prozess</div>
-                </div>
-
-                <div>
-                    <label for="order_processing_time">Order Processing Time (min)</label>
-                    <input id="order_processing_time" name="order_processing_time" type="number" min="0" step="1" required>
-                    <div class="help">Durchschnittliche Bearbeitungszeit</div>
-                </div>
-
-                <div>
-                    <label for="process_standardization">Process Standardization</label>
-                    <select id="process_standardization" name="process_standardization" required>
-                        <option value="low">low</option>
-                        <option value="medium">medium</option>
-                        <option value="high">high</option>
-                        <option value="fully standardized">fully standardized</option>
-                    </select>
-                    <div class="help">Wie standardisiert sind die Prozesse?</div>
-                </div>
-
-                <div>
-                    <label for="role_clarity">Role Clarity</label>
-                    <select id="role_clarity" name="role_clarity" required>
-                        <option value="unclear">unclear</option>
-                        <option value="partial">partial</option>
-                        <option value="clear">clear</option>
-                        <option value="fully defined">fully defined</option>
-                    </select>
-                    <div class="help">Wie klar sind Rollen definiert?</div>
-                </div>
-
-                <div>
-                    <label for="ownership_definition">Ownership Definition</label>
-                    <select id="ownership_definition" name="ownership_definition" required>
-                        <option value="none">none</option>
-                        <option value="informal">informal</option>
-                        <option value="formal">formal</option>
-                        <option value="enforced">enforced</option>
-                    </select>
-                    <div class="help">Wie verbindlich ist Ownership geregelt?</div>
-                </div>
-
-                <div>
-                    <label for="training_coverage">Training Coverage (%)</label>
-                    <input id="training_coverage" name="training_coverage" type="number" min="0" max="100" step="1" required>
-                    <div class="help">Abdeckung von Trainingsmaßnahmen</div>
-                </div>
-
-                <div>
-                    <label for="tool_adoption">Tool Adoption (%)</label>
-                    <input id="tool_adoption" name="tool_adoption" type="number" min="0" max="100" step="1" required>
-                    <div class="help">Nutzung neuer Tools im Alltag</div>
-                </div>
-
-                <div>
-                    <label for="change_communication">Change Communication</label>
-                    <select id="change_communication" name="change_communication" required>
-                        <option value="none">none</option>
-                        <option value="irregular">irregular</option>
-                        <option value="structured">structured</option>
-                        <option value="embedded">embedded</option>
-                    </select>
-                    <div class="help">Wie strukturiert wird Veränderung kommuniziert?</div>
-                </div>
-
+            <div>
+                <label for="company_id">{{ texts.company_label if texts is defined else 'Unternehmen' }}</label>
+                <input id="company_id" name="company_id" type="text"
+                       placeholder="{{ texts.company_placeholder if texts is defined else 'z.B. Muster GmbH' }}"
+                       required>
             </div>
-            <button type="submit">Analyse starten</button>
-        </form>
-    </div>
 
-    {% if result %}
-
-    <!-- Ergebnisübersicht -->
-    <div class="card">
-        <h2>Ergebnisübersicht</h2>
-        <p><strong>Unternehmen:</strong> {{ assessment.company_id }}</p>
-        {% if assessment.industry %}
-        <p><strong>Branche:</strong> {{ assessment.industry }}</p>
-        {% endif %}
-        <p><strong>Overall Readiness:</strong> {{ "%.1f"|format(result.overall_readiness) }} / 3</p>
-        <p>
-            <strong>Transition möglich:</strong>
-            {% if result.transition_feasible %}
-                <span class="status status-green">Ja</span>
-            {% else %}
-                <span class="status status-red">Nein</span>
-            {% endif %}
-        </p>
-        <p>
-            <strong>Transition Risk:</strong>
-            {% if result.transition_risk == "low" %}
-                <span class="status status-green">Low</span>
-            {% elif result.transition_risk == "medium" %}
-                <span class="status status-yellow">Medium</span>
-            {% else %}
-                <span class="status status-red">High</span>
-            {% endif %}
-        </p>
-    </div>
-
-    <!-- Dimension Scores -->
-    <div class="card">
-        <h2>Dimension Scores</h2>
-        <div class="grid">
-            {% set dims = [("T", "Technology"), ("P", "Process"), ("R", "Responsibility"), ("A", "Acceptance")] %}
-            {% for key, label in dims %}
-            <div class="metric-card">
-                <div>{{ label }}</div>
-                <div class="metric-value">{{ "%.1f"|format(result.dimension_scores[key]) }}</div>
-                <div style="margin-top:6px; font-size:13px; color:#8fa1c2;">
-                    {{ result.maturity_descriptions[key] }}
-                </div>
+            <div>
+                <label for="industry">{{ texts.industry_label if texts is defined else 'Branche' }}</label>
+                <input id="industry" name="industry" type="text"
+                       placeholder="{{ texts.industry_placeholder if texts is defined else 'z.B. Logistik' }}">
+                <div class="help">{{ texts.industry_help if texts is defined else 'Optional – verbessert die KI-Empfehlung' }}</div>
             </div>
-            {% endfor %}
+
+            <div>
+                <label for="automation_rate">Automation Rate (%)</label>
+                <input id="automation_rate" name="automation_rate" type="number" min="0" max="100" step="1" required>
+                <div class="help">Anteil automatisierter Abläufe</div>
+            </div>
+
+            <div>
+                <label for="system_availability">System Availability (%)</label>
+                <input id="system_availability" name="system_availability" type="number" min="0" max="100" step="1" required>
+                <div class="help">Systemverfügbarkeit im Betrieb</div>
+            </div>
+
+            <div>
+                <label for="error_rate">Error Rate (%)</label>
+                <input id="error_rate" name="error_rate" type="number" min="0" max="100" step="0.1" required>
+                <div class="help">Fehlerquote im Prozess</div>
+            </div>
+
+            <div>
+                <label for="order_processing_time">Order Processing Time (min)</label>
+                <input id="order_processing_time" name="order_processing_time" type="number" min="0" step="1" required>
+                <div class="help">Durchschnittliche Bearbeitungszeit</div>
+            </div>
+
+            <div>
+                <label for="process_standardization">Process Standardization</label>
+                <select id="process_standardization" name="process_standardization" required>
+                    <option value="low">low</option>
+                    <option value="medium">medium</option>
+                    <option value="high">high</option>
+                    <option value="fully standardized">fully standardized</option>
+                </select>
+                <div class="help">Wie standardisiert sind die Prozesse?</div>
+            </div>
+
+            <div>
+                <label for="role_clarity">Role Clarity</label>
+                <select id="role_clarity" name="role_clarity" required>
+                    <option value="unclear">unclear</option>
+                    <option value="partial">partial</option>
+                    <option value="clear">clear</option>
+                    <option value="fully defined">fully defined</option>
+                </select>
+                <div class="help">Wie klar sind Rollen definiert?</div>
+            </div>
+
+            <div>
+                <label for="ownership_definition">Ownership Definition</label>
+                <select id="ownership_definition" name="ownership_definition" required>
+                    <option value="none">none</option>
+                    <option value="informal">informal</option>
+                    <option value="formal">formal</option>
+                    <option value="enforced">enforced</option>
+                </select>
+                <div class="help">Wie verbindlich ist Ownership geregelt?</div>
+            </div>
+
+            <div>
+                <label for="training_coverage">Training Coverage (%)</label>
+                <input id="training_coverage" name="training_coverage" type="number" min="0" max="100" step="1" required>
+                <div class="help">Abdeckung von Trainingsmaßnahmen</div>
+            </div>
+
+            <div>
+                <label for="tool_adoption">Tool Adoption (%)</label>
+                <input id="tool_adoption" name="tool_adoption" type="number" min="0" max="100" step="1" required>
+                <div class="help">Nutzung neuer Tools im Alltag</div>
+            </div>
+
+            <div>
+                <label for="change_communication">Change Communication</label>
+                <select id="change_communication" name="change_communication" required>
+                    <option value="none">none</option>
+                    <option value="irregular">irregular</option>
+                    <option value="structured">structured</option>
+                    <option value="embedded">embedded</option>
+                </select>
+                <div class="help">Wie strukturiert wird Veränderung kommuniziert?</div>
+            </div>
+
         </div>
-    </div>
 
-    <!-- Bottlenecks -->
-    {% if result.bottlenecks %}
-    <div class="card">
-        <h2>Strukturelle Engpässe</h2>
+        <button type="submit">
+            {{ texts.analyze_button if texts is defined else 'Analyse starten' }}
+        </button>
+    </form>
+</div>
+
+{% if result %}
+
+<!-- ── Ergebnisübersicht ──────────────────────────────────── -->
+<div class="card result-header-card">
+    <div class="result-header-grid">
+
+        <div class="result-header-main">
+            <div class="hero-badge" style="margin-bottom: 10px;">Assessment Result</div>
+            <h2 style="font-size: 24px; margin-bottom: 4px;">
+                {% if assessment is defined and assessment.company_id %}
+                    {{ assessment.company_id }}
+                {% elif assessment is defined and assessment.domain %}
+                    {{ assessment.domain }}
+                {% else %}
+                    System Analysis
+                {% endif %}
+            </h2>
+            {% if assessment is defined and assessment.industry %}
+            <p style="color: #8fa1c2; font-size: 14px; margin: 0;">{{ assessment.industry }}</p>
+            {% endif %}
+        </div>
+
+        <div class="result-kpi-row">
+            <div class="result-kpi">
+                <div class="result-kpi-label">Overall Readiness</div>
+                <div class="result-kpi-value">{{ "%.1f"|format(result.overall_readiness) }}<span style="font-size:16px; font-weight:400; color:#8fa1c2;"> / 3</span></div>
+            </div>
+            <div class="result-kpi">
+                <div class="result-kpi-label">Transition</div>
+                <div class="result-kpi-value">
+                    {% if result.transition_feasible %}
+                        <span class="status status-green">Möglich</span>
+                    {% else %}
+                        <span class="status status-red">Nicht möglich</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="result-kpi">
+                <div class="result-kpi-label">Risk Level</div>
+                <div class="result-kpi-value">
+                    {% if result.transition_risk == "low" %}
+                        <span class="status status-green">Low</span>
+                    {% elif result.transition_risk == "medium" %}
+                        <span class="status status-yellow">Medium</span>
+                    {% else %}
+                        <span class="status status-red">High</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ── Dimension Scores ───────────────────────────────────── -->
+<div class="card">
+    <h2>Dimension Scores</h2>
+    <div class="grid">
+        {% set dims = [("T", "Technology"), ("P", "Process"), ("R", "Responsibility"), ("A", "Acceptance")] %}
+        {% for key, label in dims %}
+        <div class="metric-card">
+            <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.06em;
+                        text-transform: uppercase; color: #8fa1c2; margin-bottom: 6px;">
+                {{ label }}
+            </div>
+            <div class="metric-value">{{ "%.1f"|format(result.dimension_scores[key]) }}</div>
+
+            <!-- Score Bar -->
+            <div style="margin-top: 10px; height: 4px; border-radius: 2px;
+                        background: rgba(255,255,255,0.08); overflow: hidden;">
+                <div style="height: 100%; border-radius: 2px;
+                            width: {{ (result.dimension_scores[key] / 3 * 100)|int }}%;
+                            background: linear-gradient(90deg, var(--primary-2), var(--primary));
+                            transition: width 0.6s ease;">
+                </div>
+            </div>
+
+            <div style="margin-top: 8px; font-size: 12px; color: #8fa1c2; line-height: 1.4;">
+                {{ result.maturity_descriptions[key] }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- ── Bottlenecks ────────────────────────────────────────── -->
+{% if result.bottlenecks %}
+<div class="card">
+    <h2>Strukturelle Engpässe</h2>
+    {% set dim_labels = {"T": "Technology", "P": "Process", "R": "Responsibility", "A": "Acceptance"} %}
+    <div style="display: flex; flex-direction: column; gap: 12px;">
         {% for dim, detail in result.bottleneck_details.items() %}
-        <div class="metric-card" style="margin-bottom:12px;">
-            {% set dim_labels = {"T": "Technology", "P": "Process", "R": "Responsibility", "A": "Adoption"} %}
-            <h3>{{ dim_labels[dim] }} – {{ detail.issue }}</h3>
+        <div class="metric-card" style="border-left: 3px solid var(--danger); border-radius: 0 16px 16px 0;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <span class="status status-red">{{ dim_labels[dim] }}</span>
+            </div>
+            <p style="margin: 0 0 8px; color: var(--text); font-size: 14px;">{{ detail.issue }}</p>
             {% if detail.required_capacities %}
-            <ul>
+            <ul style="margin: 0; padding-left: 18px;">
                 {% for cap in detail.required_capacities %}
-                <li>{{ cap }}</li>
+                <li style="font-size: 13px; color: #8fa1c2; margin-bottom: 4px;">{{ cap }}</li>
                 {% endfor %}
             </ul>
             {% endif %}
         </div>
         {% endfor %}
     </div>
-    {% endif %}
+</div>
+{% endif %}
 
-    <!-- AI Executive Summary -->
-    {% if summary %}
-    <div class="card">
-        <h2 class="section-title">Gesamteinschätzung <span class="ai-badge">AI</span></h2>
-        <div class="summary-box">{{ summary }}</div>
+<!-- ── AI Summary ─────────────────────────────────────────── -->
+{% if summary %}
+<div class="card">
+    <h2 class="section-title">
+        Gesamteinschätzung
+        <span class="ai-badge">AI</span>
+    </h2>
+    <div class="summary-box">{{ summary }}</div>
+</div>
+{% endif %}
+
+<!-- ── AI Explanation (altes Format) ─────────────────────── -->
+{% if explanation %}
+<div class="card">
+    <h2 class="section-title">AI Explanation <span class="ai-badge">AI</span></h2>
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+
+        {% if explanation.diagnosis %}
+        <div class="metric-card">
+            <h3 style="color: #ff9c9c; margin-bottom: 10px;">Diagnosis</h3>
+            <ul>
+                {% for item in explanation.diagnosis %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if explanation.operational_impact %}
+        <div class="metric-card">
+            <h3 style="color: #ffe17a; margin-bottom: 10px;">Operational Impact</h3>
+            <ul>
+                {% for item in explanation.operational_impact %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if explanation.capacity_gap %}
+        <div class="metric-card">
+            <h3 style="color: #7dd3fc; margin-bottom: 10px;">Capacity Gap</h3>
+            <ul>
+                {% for item in explanation.capacity_gap %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
     </div>
-    {% endif %}
+</div>
+{% endif %}
 
-    <!-- Top Prioritäten -->
-    {% if priorities %}
-    <div class="card">
-        <h2 class="section-title">Top-Prioritäten <span class="ai-badge">AI</span></h2>
+<!-- ── Top Priorities ─────────────────────────────────────── -->
+{% if priorities %}
+<div class="card">
+    <h2 class="section-title">Top-Prioritäten <span class="ai-badge">AI</span></h2>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
         {% for p in priorities %}
-        <div class="metric-card" style="margin-bottom:12px;">
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
-                <span class="status status-yellow" style="font-size:13px;">{{ p.rank }}</span>
-                <span class="status status-green" style="font-size:12px;">{{ p.dimension_label }}</span>                {% if p.timeframe %}
-                <span style="font-size:12px; color:#8fa1c2;">{{ p.timeframe }}</span>
-                {% endif %}
+        <div class="metric-card" style="display: flex; gap: 16px; align-items: flex-start;">
+            <div style="flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%;
+                        background: linear-gradient(135deg, var(--primary-2), var(--primary));
+                        display: flex; align-items: center; justify-content: center;
+                        font-weight: 700; font-size: 14px; color: white;">
+                {{ p.rank }}
             </div>
-            <h3>{{ p.action }}</h3>
-            <p style="margin-top:4px;">{{ p.rationale }}</p>
+            <div style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
+                    {% if p.dimension is defined %}
+                    <span class="status status-green" style="font-size: 11px;">{{ p.dimension }}</span>
+                    {% endif %}
+                    {% if p.timeframe %}
+                    <span style="font-size: 12px; color: #8fa1c2;">{{ p.timeframe }}</span>
+                    {% endif %}
+                </div>
+                <h3 style="margin-bottom: 4px; font-size: 15px;">{{ p.action }}</h3>
+                <p style="margin: 0; font-size: 13px; line-height: 1.5;">{{ p.rationale }}</p>
+            </div>
         </div>
         {% endfor %}
     </div>
-    {% endif %}
+</div>
+{% endif %}
 
-    <!-- Größter Hebel + Risiko + Nächster Schritt -->
-    {% if lever or risk or next_step %}
-    <div class="card">
-        <h2 class="section-title">Handlungsrahmen <span class="ai-badge">AI</span></h2>
+<!-- ── Handlungsrahmen ────────────────────────────────────── -->
+{% if lever or risk or next_step %}
+<div class="card">
+    <h2 class="section-title">Handlungsrahmen <span class="ai-badge">AI</span></h2>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
 
         {% if lever %}
-        <div class="metric-card" style="margin-bottom:12px;">
-        <h3>Größter Hebel – {{ lever.dimension_label }}</h3>
-            <p>{{ lever.explanation }}</p>
+        <div class="metric-card">
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+                        text-transform: uppercase; color: var(--primary); margin-bottom: 6px;">
+                Größter Hebel
+            </div>
+            <h3 style="margin-bottom: 6px;">
+                {% if lever.dimension is defined %}{{ lever.dimension }} – {% endif %}
+                {{ lever.explanation[:60] }}{% if lever.explanation|length > 60 %}...{% endif %}
+            </h3>
+            <p style="margin: 0; font-size: 13px;">{{ lever.explanation }}</p>
         </div>
         {% endif %}
 
         {% if risk %}
-        <div class="metric-card" style="margin-bottom:12px;">
-            <h3>
+        <div class="metric-card">
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+                        text-transform: uppercase; color: #ff9c9c; margin-bottom: 6px;">
                 Risiko bei Untätigkeit –
                 {% if risk.level == "high" %}
-                    <span class="status status-red">High</span>
+                    <span class="status status-red" style="font-size: 11px;">High</span>
                 {% elif risk.level == "medium" %}
-                    <span class="status status-yellow">Medium</span>
+                    <span class="status status-yellow" style="font-size: 11px;">Medium</span>
                 {% else %}
-                    <span class="status status-green">Low</span>
+                    <span class="status status-green" style="font-size: 11px;">Low</span>
                 {% endif %}
-            </h3>
-            <p>{{ risk.consequence }}</p>
+            </div>
+            <p style="margin: 0; font-size: 13px;">{{ risk.consequence }}</p>
         </div>
         {% endif %}
 
         {% if next_step %}
-        <div class="metric-card">
-            <h3>Nächster konkreter Schritt</h3>
-            <p>{{ next_step.action }}</p>
+        <div class="metric-card" style="border-left: 3px solid var(--primary); border-radius: 0 16px 16px 0;">
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+                        text-transform: uppercase; color: var(--primary); margin-bottom: 6px;">
+                Nächster konkreter Schritt
+            </div>
+            <p style="margin: 0 0 6px; font-size: 14px; color: var(--text); font-weight: 500;">
+                {{ next_step.action }}
+            </p>
             {% if next_step.owner %}
-            <p style="margin-top:4px;"><strong>Verantwortlich:</strong> {{ next_step.owner }}</p>
-            {% endif %}
-            {% if next_step.by_when %}
-            <p><strong>Bis:</strong> {{ next_step.by_when }}</p>
+            <p style="margin: 0; font-size: 12px; color: #8fa1c2;">
+                Verantwortlich: {{ next_step.owner }}
+                {% if next_step.by_when %} · Bis: {{ next_step.by_when }}{% endif %}
+            </p>
             {% endif %}
         </div>
         {% endif %}
-    </div>
-    {% endif %}
 
-    <!-- RAG-Quellen -->
-    {% if references %}
-    <div class="card">
-        <h2>Genutzte Quellen</h2>
-        <ul>
-            {% for ref in references %}
-            <li>{{ ref }}</li>
+    </div>
+</div>
+{% endif %}
+
+<!-- ── RAG Quellen ────────────────────────────────────────── -->
+{% if references %}
+<div class="card">
+    <h2>Genutzte Quellen</h2>
+    <ul>
+        {% for ref in references %}
+        <li style="font-size: 13px; color: #8fa1c2;">{{ ref }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- ── Mini Chat ──────────────────────────────────────────── -->
+<div class="card">
+    <h2 class="section-title">AI Chat <span class="ai-badge">Session</span></h2>
+    <p style="font-size: 14px; color: #8fa1c2; margin-bottom: 16px;">
+        Ask follow-up questions. The system retains context within this session.
+    </p>
+
+    <div id="chatHistoryMini" style="margin-bottom: 16px;">
+        {% if session.chat_history %}
+            {% for item in session.chat_history[-6:] %}
+            <div style="margin-bottom: 10px; padding: 12px 14px; border-radius: 12px;
+                        background: {% if item.role == 'user' %}rgba(125,211,252,0.06){% else %}rgba(129,140,248,0.06){% endif %};
+                        border: 1px solid {% if item.role == 'user' %}rgba(125,211,252,0.12){% else %}rgba(129,140,248,0.12){% endif %};">
+                <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+                            text-transform: uppercase; margin-bottom: 6px;
+                            color: {% if item.role == 'user' %}var(--primary){% else %}var(--primary-2){% endif %};">
+                    {{ item.role }}
+                </div>
+                <p style="margin: 0; font-size: 14px; line-height: 1.55; color: var(--text);">
+                    {{ item.content }}
+                </p>
+            </div>
             {% endfor %}
-        </ul>
+        {% else %}
+            <p style="opacity: 0.5; font-size: 14px;">No messages yet.</p>
+        {% endif %}
     </div>
-    {% endif %}
 
-    {% endif %} {# end if result #}
-
+    <form id="chatMiniForm">
+        <textarea id="chatMiniInput" rows="3"
+                  style="width: 100%; padding: 12px 14px; border-radius: 12px;
+                         border: 1px solid rgba(255,255,255,0.10);
+                         background: rgba(255,255,255,0.05); color: white;
+                         font-size: 14px; font-family: inherit; resize: vertical;"
+                  placeholder="Ask something about the system..."
+                  required></textarea>
+        <div style="display: flex; gap: 10px; margin-top: 12px;">
+            <button type="submit" style="margin-top: 0;">Send</button>
+            <button type="button" id="clearMiniChat"
+                    style="margin-top: 0; background: rgba(239,68,68,0.12);
+                           box-shadow: none; border: 1px solid rgba(239,68,68,0.2);
+                           color: #ff9c9c;">
+                Clear
+            </button>
+        </div>
+    </form>
 </div>
 
+{% endif %} {# end if result #}
+
+<!-- ── Scripts ────────────────────────────────────────────── -->
 <script>
-    const form = document.getElementById("assessmentForm");
-    const overlay = document.getElementById("loadingOverlay");
-    if (form && overlay) {
-        form.addEventListener("submit", function () {
-            overlay.classList.add("active");
-        });
-    }
+const form    = document.getElementById("assessmentForm");
+const overlay = document.getElementById("loadingOverlay");
+if (form && overlay) {
+    form.addEventListener("submit", () => overlay.classList.add("active"));
+}
 </script>
-</body>
-</html>
+
+<script>
+const chatMiniForm  = document.getElementById("chatMiniForm");
+const chatMiniInput = document.getElementById("chatMiniInput");
+const clearMiniChat = document.getElementById("clearMiniChat");
+
+if (chatMiniForm) {
+    chatMiniForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const message = chatMiniInput.value.trim();
+        if (!message) return;
+
+        if (overlay) overlay.classList.add("active");
+
+        try {
+            const response = await fetch("/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message })
+            });
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                if (overlay) overlay.classList.remove("active");
+            }
+        } catch {
+            if (overlay) overlay.classList.remove("active");
+        }
+    });
+}
+
+if (clearMiniChat) {
+    clearMiniChat.addEventListener("click", async function () {
+        const response = await fetch("/chat/clear", { method: "POST" });
+        if (response.ok) window.location.reload();
+    });
+}
+</script>
+
+{% endblock %}
