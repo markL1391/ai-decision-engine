@@ -79,7 +79,7 @@ def _safe_json_loads(raw_text: str) -> Dict[str, Any] | None:
 # Prompt builders
 # =============================================================================
 
-def build_prompt(engine_result: Dict[str, Any], retrieved_context: List[str]) -> str:
+def build_prompt(engine_result: Dict[str, Any], retrieved_context: List[str], industry: str = "") -> str:
     """
     Build the user prompt for structured advisory output.
 
@@ -90,6 +90,7 @@ def build_prompt(engine_result: Dict[str, Any], retrieved_context: List[str]) ->
         engine_result: Deterministic engine output.
         retrieved_context: Context lines from the retrieval layer and/or
             conversation history.
+        industry: Industry context for branch-specific recommendations.
 
     Returns:
         Prompt string for the OpenAI Responses API.
@@ -109,6 +110,30 @@ def build_prompt(engine_result: Dict[str, Any], retrieved_context: List[str]) ->
     executive_summary = engine_result.get("executive_summary", "")
 
     context_block = _build_context_block(retrieved_context)
+
+    industry_hints = {
+        "logistik": "Branchenkontext Logistik: Neue Technologien (WMS, TMS) scheitern oft an Schulungsmängeln. Erst trainieren, DANN ausrollen.",
+        "logistics": "Industry context Logistics: New technologies (WMS, TMS) often fail due to training gaps. Train first, THEN roll out.",
+        "produktion": "Branchenkontext Produktion: Maschinenausfall hat direkte Kostenfolgen. Erst standardisieren, DANN automatisieren.",
+        "manufacturing": "Industry context Manufacturing: Machine downtime has direct cost consequences. Standardize first, THEN automate.",
+        "e-commerce": "Branchenkontext E-Commerce: Skalierbarkeit zentral. Neue Shop-Systeme brauchen intensive Change-Kommunikation.",
+        "ecommerce": "Industry context E-Commerce: Scalability is key. New shop systems require intensive change communication.",
+        "pharma": "Branchenkontext Pharma: GMP-Compliance first. Schulung ist regulatorisch gefordert.",
+        "pharmaceutical": "Industry context Pharma: GMP compliance first. Training is a regulatory requirement.",
+        "retail": "Branchenkontext Einzelhandel: POS-Systeme scheitern an fehlender Schulung. Erst Schulung, DANN Rollout.",
+        "handel": "Branchenkontext Handel: POS-Systeme scheitern an fehlender Schulung. Erst Schulung, DANN Rollout.",
+        "einzelhandel": "Branchenkontext Einzelhandel: POS-Systeme scheitern an fehlender Schulung. Erst Schulung, DANN Rollout.",
+        "saas": "Branchenkontext SaaS: API-Stabilität existenziell. Agile Prozesse brauchen klare Rollen.",
+        "tech": "Industry context Tech: API stability is existential. Agile processes need clear roles.",
+        "software": "Industry context Software: Feature adoption drives success. Pilot groups for new tools.",
+    }
+
+    industry_hint = ""
+    industry_lower = industry.lower().strip() if industry else ""
+    for key, hint in industry_hints.items():
+        if key in industry_lower:
+            industry_hint = hint
+            break
 
     prompt = f"""
 You are an operations transformation advisor writing for senior business decision-makers.
@@ -189,6 +214,7 @@ Dimension score detail:
 - Process: {scores.get("P", 0)}
 - Responsibility: {scores.get("R", 0)}
 - Adoption: {scores.get("A", 0)}
+{f'- Industry context: {industry_hint}' if industry_hint else ''}
 
 Retrieved knowledge:
 {context_block}
@@ -278,6 +304,8 @@ def generate_explanation_openai(
     api_key: str,
     engine_result: Dict[str, Any],
     retrieved_context: List[str],
+    industry: str = "",
+    temperature: float = 0.2,
 ) -> Dict[str, Any]:
     """
     Generate structured advisory output for a single assessment.
@@ -289,12 +317,14 @@ def generate_explanation_openai(
         engine_result: Deterministic assessment result.
         retrieved_context: Context lines from the retrieval layer and/or
             prior conversation history.
+        industry: Industry context for branch-specific recommendations.
+        temperature: Temperature setting for the model (0.2 for focused, 0.8 for creative).
 
     Returns:
         Dictionary containing structured advisory fields plus model metadata.
     """
     client = OpenAI(api_key=api_key)
-    prompt = build_prompt(engine_result, retrieved_context)
+    prompt = build_prompt(engine_result, retrieved_context, industry)
 
     response = client.responses.create(
         model=ADVISOR_MODEL_NAME,
@@ -307,7 +337,8 @@ def generate_explanation_openai(
                     "Avoid generic management language and empty consulting phrases. "
                     "Ground every recommendation in the provided bottlenecks, scores, and required capacities. "
                     "Do not invent facts. "
-                    "Return only valid JSON that matches the requested schema."
+                    "Return only valid JSON that matches the requested schema. "
+                    "IMPORTANT: Do NOT use markdown formatting in any text fields. Write in plain text without **bold**, *italic*, or any other markdown syntax."
                 ),
             },
             {
@@ -315,6 +346,7 @@ def generate_explanation_openai(
                 "content": prompt,
             },
         ],
+        temperature=temperature,
         text={
             "format": {
                 "type": "json_schema",
@@ -426,33 +458,57 @@ def build_compare_prompt(comparison: Dict[str, Any]) -> str:
     a_delta = comparison.get("a_delta", 0)
     risk_active = comparison.get("risk_alert", False)
     gap = comparison.get("critical_gap", 0)
+    company_name = comparison.get("company_name", "the company")
+    industry = comparison.get("industry", "")
+
+    # Branchenkontext für die Analyse
+    industry_context = ""
+    if industry:
+        industry_lower = industry.lower()
+        if any(k in industry_lower for k in ["logistik", "logistics"]):
+            industry_context = "Branchenkontext: Logistik - Automation erfordert intensive Schulung von Lagerpersonal und Fahrern. Neue Systeme ohne Training → Akzeptanz bricht ein."
+        elif any(k in industry_lower for k in ["produktion", "manufacturing", "fertigung"]):
+            industry_context = "Branchenkontext: Produktion - Technologie-Investitionen ohne Prozessreife → Qualitätsprobleme. Erst standardisieren, DANN automatisieren."
+        elif any(k in industry_lower for k in ["e-commerce", "e-commerce", "online"]):
+            industry_context = "Branchenkontext: E-Commerce - Neue Shop/ERP-Systeme brauchen Change-Kommunikation an Marketing- und Operations-Teams. Skalierbarkeit vorher testen."
+        elif any(k in industry_lower for k in ["pharma", "chemie"]):
+            industry_context = "Branchenkontext: Pharma - Jede Technologie-Änderung muss validiert und dokumentiert sein. Compliance-Anforderungen einplanen."
+        elif any(k in industry_lower for k in ["retail", "handel", "einzelhandel"]):
+            industry_context = "Branchenkontext: Einzelhandel - Neue POS/Kassen-Systeme scheitern an Schulungsmängeln. Erst Key-User trainieren, DANN Rollout."
+        elif any(k in industry_lower for k in ["saas", "tech", "software"]):
+            industry_context = "Branchenkontext: SaaS/Tech - Feature-Adoption bei Entwicklerteams kritisch. Pilotgruppen und Onboarding vor Voll-Rollout."
+        else:
+            industry_context = f"Branchenkontext: {industry}"
 
     # Basis-Informationen für die KI
     prompt = f"""
-    Compare Scenario A (Current) and Scenario B (Future) based on these structural deltas:
-    - Technology: {t_delta}
-    - Process: {comparison.get('p_delta', 0)}
-    - Responsibility: {comparison.get('r_delta', 0)}
-    - Adoption: {a_delta}
-    - Overall Readiness Delta: {comparison.get('overall_readiness_delta', 0)}
+Compare Scenario A (Current) and Scenario B (Future) for {company_name} ({industry}) based on these structural deltas:
+- Technology: {t_delta}
+- Process: {comparison.get('p_delta', 0)}
+- Responsibility: {comparison.get('r_delta', 0)}
+- Adoption: {a_delta}
+- Overall Readiness Delta: {comparison.get('overall_readiness_delta', 0)}
 
-    Feasibility Change: {comparison.get('transition_feasible_a')} -> {comparison.get('transition_feasible_b')}
-    """
+Feasibility Change: {comparison.get('transition_feasible_a')} -> {comparison.get('transition_feasible_b')}
+
+{industry_context}
+"""
 
     # Die spezifische Risiko-Anweisung hinzufügen
     if risk_active:
         prompt += f"""
-        CRITICAL WARNING: The 'risk_alert' is TRUE. 
-        Note that the technological advancement (T-Delta: {t_delta}) has significantly outpaced 
-        organizational adoption (A-Delta: {a_delta}) with a critical gap of {gap}.
+CRITICAL WARNING: The 'risk_alert' is TRUE. 
+Note that the technological advancement (T-Delta: {t_delta}) has significantly outpaced 
+organizational adoption (A-Delta: {a_delta}) with a critical gap of {gap}.
 
-        In your summary, you MUST:
-        1. Warn the user that this creates a 'Digital Adoption Gap'.
-        2. Explain that this leads to 'Shelfware' (expensive, unused technology).
-        3. Advise that Scenario B will likely fail unless adoption measures are drastically increased.
-        """
+In your summary, you MUST:
+1. Warn the user that this creates a 'Digital Adoption Gap'.
+2. Explain that this leads to 'Shelfware' (expensive, unused technology).
+3. Advise that Scenario B will likely fail unless adoption measures are drastically increased.
+4. Give specific, industry-relevant recommendations for closing this gap (e.g., "For {industry}: Schedule 2-week training bootcamp before go-live").
+"""
     else:
-        prompt += "\nAnalysis: Focus on how the structural changes improve the system flow."
+        prompt += "\nAnalysis: Focus on how the structural changes improve the system flow and give industry-specific recommendations."
 
     return prompt
 
@@ -747,7 +803,7 @@ def generate_temperature_comparison_openai(
 ) -> Dict[str, Any]:
     """
     Generate two structured explanation outputs for the same assessment
-    using two different temperature values.
+    using two different temperature values, plus an AI-generated comparison summary.
     """
     client = OpenAI(api_key=api_key)
 
@@ -765,9 +821,63 @@ def generate_temperature_comparison_openai(
         temperature=temperature_b,
     )
 
+    summary = _generate_temperature_comparison_summary(
+        client=client,
+        output_a=output_a,
+        output_b=output_b,
+        temperature_a=temperature_a,
+        temperature_b=temperature_b,
+    )
+
     return {
         "output_a": output_a,
         "output_b": output_b,
+        "ai_summary": summary,
         "model_name": "gpt-4o-mini",
         "prompt_version": "v1_temperature_comparison_schema",
     }
+
+
+def _generate_temperature_comparison_summary(
+    client,
+    output_a: Dict[str, Any],
+    output_b: Dict[str, Any],
+    temperature_a: float,
+    temperature_b: float,
+) -> str:
+    """
+    Generate a comparative summary that explains the differences between
+    low-temperature (focused) and high-temperature (creative) responses.
+    """
+    summary_prompt = f"""You are analyzing two AI-generated explanations for the same system assessment, 
+generated with different temperature settings.
+
+Low Temperature ({temperature_a}) Response:
+- Summary: {output_a.get('summary', 'N/A')}
+- Top Priorities: {', '.join([p.get('action', 'N/A') for p in output_a.get('top_priorities', [])[:2]])}
+- Main Lever: {output_a.get('lever', {}).get('explanation', 'N/A')[:150] if output_a.get('lever') else 'N/A'}
+
+High Temperature ({temperature_b}) Response:
+- Summary: {output_b.get('summary', 'N/A')}
+- Top Priorities: {', '.join([p.get('action', 'N/A') for p in output_b.get('top_priorities', [])[:2]])}
+- Main Lever: {output_b.get('lever', {}).get('explanation', 'N/A')[:150] if output_b.get('lever') else 'N/A'}
+
+Please provide a brief comparison (2-3 sentences) that highlights:
+1. Key differences in how the two responses approach the analysis
+2. Which temperature setting might be more suitable for operational decision-making
+
+Keep your response concise and in the same language as the input (German if the context suggests German, otherwise English)."""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant analyzing AI response differences."},
+                {"role": "user", "content": summary_prompt}
+            ],
+            temperature=0.3,
+            max_tokens=300,
+        )
+        return response.choices[0].message.content
+    except Exception:
+        return ""

@@ -76,22 +76,17 @@
 } %}
 
 <!-- Loading Overlay -->
-<div id="loadingOverlay" class="loading-overlay">
+<div id="loadingOverlay" style="display:none; position:fixed; inset:0; width:100vw; height:100vh; background:url('/static/images/network-bg.png') center center / cover no-repeat, radial-gradient(ellipse at center, rgba(15,23,42,0.7) 0%, rgba(2,6,23,0.85) 100%); backdrop-filter:blur(4px); align-items:center; justify-content:center; flex-direction:column; z-index:99999;">
     <div class="loading-network">
         <div class="node node-1"></div>
         <div class="node node-2"></div>
         <div class="node node-3"></div>
-        <div class="node node-4"></div>
-        <div class="beam beam-1"></div>
-        <div class="beam beam-2"></div>
-        <div class="beam beam-3"></div>
+        <div class="node node-center"></div>
     </div>
     <div class="loading-box">
-        <div class="loading-title">
-            {{ "KI simuliert Szenarioverschiebung" if lang == "de" else "AI is simulating scenario shift" }}
-        </div>
+        <div class="loading-title">{{ "KI deckt verborgene Systembeschränkungen auf" if (lang == "de") else "AI is revealing hidden system constraints" }}</div>
         <div class="loading-subtitle">
-            {{ "Strukturelle Abhängigkeiten werden verglichen und Veränderungslücken ausgewertet..." if lang == "de" else "Comparing structural dependencies and measuring adoption gaps..." }}
+            {{ "Signale werden verknüpft, Abhängigkeiten analysiert und in operative Erkenntnisse übersetzt." if (lang == "de") else "Connecting signals, mapping dependencies, and translating them into operational insight." }}
         </div>
     </div>
 </div>
@@ -113,9 +108,9 @@
 
 {% if error %}
 <!-- Error -->
-<div class="card">
+<div class="card" style="border-color: #ff6b6b;">
     <h2 style="color:#ff6b6b;">{{ t_page.error_title }}</h2>
-    <p>{{ error }}</p>
+    <p style="color: #ff6b6b; font-family: monospace; font-size: 13px;">{{ error }}</p>
 </div>
 {% endif %}
 
@@ -134,25 +129,25 @@
                 <h3>{{ t_page.scenario_a }}</h3>
 
                 <label>{{ t_page.company }}</label>
-                <input name="a_company_id" type="text" required>
+                <input name="a_company_id" id="a_company_id" type="text" required>
 
                 <label>{{ t_page.industry }}</label>
-                <input name="a_industry" type="text">
+                <input name="a_industry" id="a_industry" type="text">
 
                 <label>{{ t_page.automation }}</label>
-                <input name="a_automation_rate" type="number" required>
+                <input name="a_automation_rate" id="a_automation_rate" type="number" required>
 
                 <label>{{ t_page.availability }}</label>
-                <input name="a_system_availability" type="number" required>
+                <input name="a_system_availability" id="a_system_availability" type="number" required>
 
                 <label>{{ t_page.error_rate }}</label>
-                <input name="a_error_rate" type="number" step="0.1" required>
+                <input name="a_error_rate" id="a_error_rate" type="number" step="0.1" required>
 
                 <label>{{ t_page.processing_time }}</label>
-                <input name="a_order_processing_time" type="number" required>
+                <input name="a_order_processing_time" id="a_order_processing_time" type="number" required>
 
                 <label>{{ t_page.process_std }}</label>
-                <select name="a_process_standardization">
+                <select name="a_process_standardization" id="a_process_standardization">
                     <option value="low">{{ t_page.low }}</option>
                     <option value="medium">{{ t_page.medium }}</option>
                     <option value="high">{{ t_page.high }}</option>
@@ -160,7 +155,7 @@
                 </select>
 
                 <label>{{ t_page.role_clarity }}</label>
-                <select name="a_role_clarity">
+                <select name="a_role_clarity" id="a_role_clarity">
                     <option value="unclear">{{ t_page.unclear }}</option>
                     <option value="partial">{{ t_page.partial }}</option>
                     <option value="clear">{{ t_page.clear }}</option>
@@ -168,7 +163,7 @@
                 </select>
 
                 <label>{{ t_page.ownership }}</label>
-                <select name="a_ownership_definition">
+                <select name="a_ownership_definition" id="a_ownership_definition">
                     <option value="none">{{ t_page.none }}</option>
                     <option value="informal">{{ t_page.informal }}</option>
                     <option value="formal">{{ t_page.formal }}</option>
@@ -176,18 +171,23 @@
                 </select>
 
                 <label>{{ t_page.training }}</label>
-                <input name="a_training_coverage" type="number" required>
+                <input name="a_training_coverage" id="a_training_coverage" type="number" required>
 
                 <label>{{ t_page.adoption }}</label>
-                <input name="a_tool_adoption" type="number" required>
+                <input name="a_tool_adoption" id="a_tool_adoption" type="number" required>
 
                 <label>{{ t_page.change }}</label>
-                <select name="a_change_communication">
+                <select name="a_change_communication" id="a_change_communication">
                     <option value="none">{{ t_page.none }}</option>
                     <option value="irregular">{{ t_page.irregular }}</option>
                     <option value="structured">{{ t_page.structured }}</option>
                     <option value="embedded">{{ t_page.embedded }}</option>
                 </select>
+
+                <button type="button" class="fill-test-btn" data-scenario="a"
+                        style="margin-top: 12px; padding: 8px 14px; font-size: 13px;">
+                    {{ "Testdaten laden" if lang == "de" else "Load Sample Data" }}
+                </button>
             </div>
 
             <!-- Scenario B -->
@@ -195,25 +195,25 @@
                 <h3>{{ t_page.scenario_b }}</h3>
 
                 <label>{{ t_page.company }}</label>
-                <input name="b_company_id" type="text" required>
+                <input name="b_company_id" id="b_company_id" type="text" required>
 
                 <label>{{ t_page.industry }}</label>
-                <input name="b_industry" type="text">
+                <input name="b_industry" id="b_industry" type="text">
 
                 <label>{{ t_page.automation }}</label>
-                <input name="b_automation_rate" type="number" required>
+                <input name="b_automation_rate" id="b_automation_rate" type="number" required>
 
                 <label>{{ t_page.availability }}</label>
-                <input name="b_system_availability" type="number" required>
+                <input name="b_system_availability" id="b_system_availability" type="number" required>
 
                 <label>{{ t_page.error_rate }}</label>
-                <input name="b_error_rate" type="number" step="0.1" required>
+                <input name="b_error_rate" id="b_error_rate" type="number" step="0.1" required>
 
                 <label>{{ t_page.processing_time }}</label>
-                <input name="b_order_processing_time" type="number" required>
+                <input name="b_order_processing_time" id="b_order_processing_time" type="number" required>
 
                 <label>{{ t_page.process_std }}</label>
-                <select name="b_process_standardization">
+                <select name="b_process_standardization" id="b_process_standardization">
                     <option value="low">{{ t_page.low }}</option>
                     <option value="medium">{{ t_page.medium }}</option>
                     <option value="high">{{ t_page.high }}</option>
@@ -221,7 +221,7 @@
                 </select>
 
                 <label>{{ t_page.role_clarity }}</label>
-                <select name="b_role_clarity">
+                <select name="b_role_clarity" id="b_role_clarity">
                     <option value="unclear">{{ t_page.unclear }}</option>
                     <option value="partial">{{ t_page.partial }}</option>
                     <option value="clear">{{ t_page.clear }}</option>
@@ -229,7 +229,7 @@
                 </select>
 
                 <label>{{ t_page.ownership }}</label>
-                <select name="b_ownership_definition">
+                <select name="b_ownership_definition" id="b_ownership_definition">
                     <option value="none">{{ t_page.none }}</option>
                     <option value="informal">{{ t_page.informal }}</option>
                     <option value="formal">{{ t_page.formal }}</option>
@@ -237,18 +237,23 @@
                 </select>
 
                 <label>{{ t_page.training }}</label>
-                <input name="b_training_coverage" type="number" required>
+                <input name="b_training_coverage" id="b_training_coverage" type="number" required>
 
                 <label>{{ t_page.adoption }}</label>
-                <input name="b_tool_adoption" type="number" required>
+                <input name="b_tool_adoption" id="b_tool_adoption" type="number" required>
 
                 <label>{{ t_page.change }}</label>
-                <select name="b_change_communication">
+                <select name="b_change_communication" id="b_change_communication">
                     <option value="none">{{ t_page.none }}</option>
                     <option value="irregular">{{ t_page.irregular }}</option>
                     <option value="structured">{{ t_page.structured }}</option>
                     <option value="embedded">{{ t_page.embedded }}</option>
                 </select>
+
+                <button type="button" class="fill-test-btn" data-scenario="b"
+                        style="margin-top: 12px; padding: 8px 14px; font-size: 13px;">
+                    {{ "Testdaten laden" if lang == "de" else "Load Sample Data" }}
+                </button>
             </div>
 
         </div>
@@ -259,7 +264,7 @@
 
 {% if comparison %}
 <!-- Comparison Results -->
-<div class="card">
+<div class="card" id="comparisonResults">
     <h2>{{ t_page.results }}</h2>
 
     <div class="grid">
@@ -284,6 +289,8 @@
         </div>
     </div>
 </div>
+
+
 
 <!-- Dimension Shift -->
 {% if result_a and result_b %}
@@ -368,14 +375,129 @@
 
 <!-- Page Script -->
 <script>
-const compareForm = document.getElementById("compareForm");
-const overlay = document.getElementById("loadingOverlay");
+// Global error handler for debugging
+window.addEventListener("error", function(e) {
+    console.error("JavaScript error:", e.message, "at", e.filename, "line", e.lineno);
+});
 
-if (compareForm && overlay) {
-    compareForm.addEventListener("submit", function () {
-        overlay.classList.add("active");
-    });
+document.addEventListener("DOMContentLoaded", function() {
+    // Show loading animation immediately
+    const overlay = document.getElementById("loadingOverlay");
+    if (overlay) {
+        overlay.style.display = "flex";
+    }
+    
+    // Hide loading after a short delay
+    setTimeout(function() {
+        if (overlay) {
+            overlay.style.display = "none";
+        }
+    }, 1500);
+    
+    const compareForm = document.getElementById("compareForm");
+    const isGerman = document.documentElement.lang === "de" || document.documentElement.getAttribute("lang") === "de";
+
+const scenarios = {
+    a: {
+        company_id: "Nordic Express Logistics GmbH",
+        industry: "Internationale Logistik",
+        automation_rate: 71,
+        system_availability: 96,
+        error_rate: 7.8,
+        order_processing_time: 16,
+        process_standardization: "high",
+        role_clarity: "clear",
+        ownership_definition: "formal",
+        training_coverage: 42,
+        tool_adoption: 64,
+        change_communication: "structured",
+    },
+    b: {
+        company_id: "Nordic Express Logistics GmbH (Ziel)",
+        industry: "Internationale Logistik",
+        automation_rate: 85,
+        system_availability: 98,
+        error_rate: 3.2,
+        order_processing_time: 10,
+        process_standardization: "fully standardized",
+        role_clarity: "fully defined",
+        ownership_definition: "enforced",
+        training_coverage: 78,
+        tool_adoption: 88,
+        change_communication: "embedded",
+    },
+};
+
+function fillScenario(prefix, data) {
+    document.getElementById(prefix + "_company_id").value = data.company_id;
+    document.getElementById(prefix + "_industry").value = data.industry;
+    document.getElementById(prefix + "_automation_rate").value = data.automation_rate;
+    document.getElementById(prefix + "_system_availability").value = data.system_availability;
+    document.getElementById(prefix + "_error_rate").value = data.error_rate;
+    document.getElementById(prefix + "_order_processing_time").value = data.order_processing_time;
+    document.getElementById(prefix + "_training_coverage").value = data.training_coverage;
+    document.getElementById(prefix + "_tool_adoption").value = data.tool_adoption;
+    setSelect(prefix + "_process_standardization", data.process_standardization);
+    setSelect(prefix + "_role_clarity", data.role_clarity);
+    setSelect(prefix + "_ownership_definition", data.ownership_definition);
+    setSelect(prefix + "_change_communication", data.change_communication);
 }
+
+function setSelect(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return false;
+    for (let i = 0; i < el.options.length; i++) {
+        if (el.options[i].value === value) {
+            el.selectedIndex = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+document.querySelectorAll(".fill-test-btn").forEach(btn => {
+    btn.addEventListener("click", function() {
+        const scenario = this.dataset.scenario;
+        fillScenario(scenario, scenarios[scenario]);
+        
+        const loadedText = isGerman ? "✓ Geladen" : "✓ Loaded";
+        this.textContent = loadedText;
+        this.style.borderColor = "rgba(125, 211, 252, 0.45)";
+        this.style.color = "var(--primary)";
+        
+        setTimeout(() => {
+            const originalText = isGerman ? "Testdaten laden" : "Load Sample Data";
+            this.textContent = originalText;
+            this.style.borderColor = "";
+            this.style.color = "";
+        }, 2000);
+    });
+    
+    if (compareForm && overlay) {
+        compareForm.addEventListener("submit", function (e) {
+            console.log("Compare form submitting...");
+            overlay.style.display = "flex";
+            document.body.style.overflow = "hidden";
+            
+            const formData = new FormData(compareForm);
+            const data = {};
+            for (const [key, value] of formData.entries()) {
+                data[key] = value;
+            }
+            console.log("Form data being submitted:", Object.keys(data).length, "fields");
+            
+            // Fallback: if page doesn't reload within 60 seconds, hide overlay and show error
+            setTimeout(function() {
+                if (overlay.style.display === "flex") {
+                    console.log("Timeout: hiding overlay (form may have failed)");
+                    overlay.style.display = "none";
+                    document.body.style.overflow = "";
+                    alert("Form submission timed out. Please try again.");
+                }
+            }, 60000);
+        });
+    }
+});
 </script>
 
 {% endblock %}

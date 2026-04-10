@@ -383,6 +383,12 @@ def run_deterministic_engine(indicators: List[Dict[str, Any]], target_level: int
         Structured engine result dictionary.
     """
     scores = calculate_dimension_scores(indicators)
+    
+    ALL_DIMENSIONS = ["T", "P", "R", "A"]
+    for dim in ALL_DIMENSIONS:
+        if dim not in scores:
+            scores[dim] = 0.0
+    
     overall = calculate_overall_readiness(scores)
     bottlenecks = identify_bottlenecks(scores, target_level)
     feasible = check_transition_feasibility(scores, target_level)

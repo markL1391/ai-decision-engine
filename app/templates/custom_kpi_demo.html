@@ -45,6 +45,22 @@
 
 } %}
 
+<!-- Loading Overlay -->
+<div id="loadingOverlay" style="display:none; position:fixed; inset:0; width:100vw; height:100vh; background:url('/static/images/network-bg.png') center center / cover no-repeat, radial-gradient(ellipse at center, rgba(15,23,42,0.7) 0%, rgba(2,6,23,0.85) 100%); backdrop-filter:blur(4px); align-items:center; justify-content:center; flex-direction:column; z-index:99999;">
+    <div class="loading-network">
+        <div class="node node-1"></div>
+        <div class="node node-2"></div>
+        <div class="node node-3"></div>
+        <div class="node node-center"></div>
+    </div>
+    <div class="loading-box">
+        <div class="loading-title">{{ "KI deckt verborgene Systembeschränkungen auf" if (lang == "de") else "AI is revealing hidden system constraints" }}</div>
+        <div class="loading-subtitle">
+            {{ "Signale werden verknüpft, Abhängigkeiten analysiert und in operative Erkenntnisse übersetzt." if (lang == "de") else "Connecting signals, mapping dependencies, and translating them into operational insight." }}
+        </div>
+    </div>
+</div>
+
 <!-- Hero -->
 <div class="card hero-card">
     <div class="hero-badge">{{ t_page.hero_badge }}</div>
@@ -71,15 +87,15 @@
             <h3>{{ t_page.kpi }} {{ i + 1 }}</h3>
 
             <label>{{ t_page.name }}</label>
-            <input type="text" name="kpi_name" placeholder="e.g. Processing Time">
+            <input type="text" name="kpi_name" placeholder="e.g. Order Processing Time" required>
 
             <label>{{ t_page.value }}</label>
-            <input type="number" step="0.1" name="kpi_value" placeholder="e.g. 18">
+            <input type="number" step="0.1" name="kpi_value" placeholder="e.g. 18" required>
 
             <label>{{ t_page.direction }}</label>
             <select name="kpi_direction">
-                <option value="lower_better">{{ t_page.lower }}</option>
                 <option value="higher_better">{{ t_page.higher }}</option>
+                <option value="lower_better">{{ t_page.lower }}</option>
             </select>
 
             <label>{{ t_page.dimension }}</label>
@@ -90,20 +106,133 @@
                 <option value="A">{{ t_page.adoption }}</option>
             </select>
 
-            <label>{{ t_page.threshold_3 }}</label>
-            <input type="number" step="0.1" name="threshold_1">
+            <label>{{ t_page.threshold_3 }} ({{ t_page.higher }})</label>
+            <input type="number" step="0.1" name="threshold_1" placeholder="≥ Wert für Score 3" required>
 
-            <label>{{ t_page.threshold_2 }}</label>
-            <input type="number" step="0.1" name="threshold_2">
+            <label>{{ t_page.threshold_2 }} ({{ t_page.higher }})</label>
+            <input type="number" step="0.1" name="threshold_2" placeholder="≥ Wert für Score 2" required>
 
-            <label>{{ t_page.threshold_1 }}</label>
-            <input type="number" step="0.1" name="threshold_3">
+            <label>{{ t_page.threshold_1 }} ({{ t_page.higher }})</label>
+            <input type="number" step="0.1" name="threshold_3" placeholder="≥ Wert für Score 1" required>
         </div>
         {% endfor %}
 
         <button type="submit">{{ t_page.run }}</button>
+        
+        <button type="button" id="fillTestData"
+                style="margin-top: 0; margin-left: 12px;
+                       background: rgba(255,255,255,0.06);
+                       border: 1px solid rgba(140,165,255,0.22);
+                       box-shadow: none;
+                       color: #c8d5f3;
+                       font-weight: 600;">
+            {{ "Beispieldaten laden" if (lang == "de") else "Load Sample Data" }}
+        </button>
     </form>
 </div>
+
+<script>
+document.getElementById("fillTestData").addEventListener("click", function () {
+    const isGerman = document.documentElement.lang === "de";
+    
+    const sampleKPIs = [
+        { name: "Reaktionszeit Support-Ticket (Std)", value: 4.5, direction: "lower_better", dimension: "P", thresholds: [2, 6, 12] },
+        { name: "API-Uptime (%)", value: 99.7, direction: "higher_better", dimension: "T", thresholds: [99.9, 99.0, 98.0] },
+        { name: "Escalation-Rate (%)", value: 12, direction: "lower_better", dimension: "R", thresholds: [5, 15, 25] },
+        { name: "User Adoption Rate Neues Tool (%)", value: 58, direction: "higher_better", dimension: "A", thresholds: [80, 50, 30] },
+    ];
+
+    const names = document.getElementsByName("kpi_name");
+    const values = document.getElementsByName("kpi_value");
+    const directions = document.getElementsByName("kpi_direction");
+    const dimensions = document.getElementsByName("kpi_dimension");
+    const threshold1s = document.getElementsByName("threshold_1");
+    const threshold2s = document.getElementsByName("threshold_2");
+    const threshold3s = document.getElementsByName("threshold_3");
+
+    for (let i = 0; i < 4 && i < sampleKPIs.length; i++) {
+        names[i].value = sampleKPIs[i].name;
+        values[i].value = sampleKPIs[i].value;
+        
+        for (let j = 0; j < directions[i].options.length; j++) {
+            if (directions[i].options[j].value === sampleKPIs[i].direction) {
+                directions[i].selectedIndex = j;
+                break;
+            }
+        }
+        
+        for (let j = 0; j < dimensions[i].options.length; j++) {
+            if (dimensions[i].options[j].value === sampleKPIs[i].dimension) {
+                dimensions[i].selectedIndex = j;
+                break;
+            }
+        }
+        
+        threshold1s[i].value = sampleKPIs[i].thresholds[0];
+        threshold2s[i].value = sampleKPIs[i].thresholds[1];
+        threshold3s[i].value = sampleKPIs[i].thresholds[2];
+    }
+
+    const loadedText = isGerman ? "✓ Geladen" : "✓ Loaded";
+    this.textContent = loadedText;
+    this.style.borderColor = "rgba(125, 211, 252, 0.45)";
+    this.style.color = "var(--primary)";
+    
+    setTimeout(() => {
+        this.textContent = isGerman ? "Beispieldaten laden" : "Load Sample Data";
+        this.style.borderColor = "";
+        this.style.color = "";
+    }, 2500);
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+    // Show loading animation immediately
+    const overlay = document.getElementById("loadingOverlay");
+    if (overlay) {
+        overlay.style.display = "flex";
+    }
+    
+    // Hide loading after a short delay
+    setTimeout(function() {
+        if (overlay) {
+            overlay.style.display = "none";
+        }
+    }, 1500);
+    
+    document.getElementById("transferToAnalysis")?.addEventListener("click", function () {
+        const isGerman = document.documentElement.lang === "de";
+        const kpiNames = document.getElementsByName("kpi_name");
+        const kpiValues = document.getElementsByName("kpi_value");
+        const kpiDirections = document.getElementsByName("kpi_direction");
+        const kpiDimensions = document.getElementsByName("kpi_dimension");
+        const threshold1s = document.getElementsByName("threshold_1");
+        const threshold2s = document.getElementsByName("threshold_2");
+        const threshold3s = document.getElementsByName("threshold_3");
+
+        const kpis = [];
+        for (let i = 0; i < kpiNames.length; i++) {
+            if (kpiNames[i].value.trim()) {
+                kpis.push({
+                    name: kpiNames[i].value,
+                    value: kpiValues[i].value,
+                    direction: kpiDirections[i].value,
+                    dimension: kpiDimensions[i].value,
+                    thresholds: [threshold1s[i].value, threshold2s[i].value, threshold3s[i].value]
+                });
+            }
+        }
+
+        if (kpis.length === 0) {
+            alert(isGerman ? "Bitte fülle mindestens ein KPI aus." : "Please fill in at least one KPI.");
+            return;
+        }
+
+        sessionStorage.setItem("customKPIs", JSON.stringify(kpis));
+        const lang = document.documentElement.lang || "de";
+        window.location.href = "/?lang=" + lang + "&showKpis=1";
+    });
+});
+</script>
 
 {% if indicators %}
 <!-- Indicators -->
@@ -131,34 +260,51 @@
 
     <p>
         <strong>{{ t_page.readiness }}:</strong>
-        {{ "%.1f"|format(result.overall_readiness) }} / 3
+        {{ "%.1f"|format(result["overall_readiness"]) }} / 3
     </p>
 
     <p>
         <strong>{{ t_page.bottlenecks }}:</strong>
-        {{ result.bottlenecks | join(", ") if result.bottlenecks else t_page.none }}
+        {{ result["bottlenecks"] | join(", ") if result["bottlenecks"] else t_page.none }}
     </p>
 
     <div class="grid" style="margin-top:14px;">
         <div class="metric-card">
             <div>{{ t_page.technology }}</div>
-            <div class="metric-value">{{ "%.1f"|format(result.dimension_scores["T"]) }}</div>
+            <div class="metric-value">{{ "%.1f"|format(result["dimension_scores"]["T"]) }}</div>
         </div>
 
         <div class="metric-card">
             <div>{{ t_page.process }}</div>
-            <div class="metric-value">{{ "%.1f"|format(result.dimension_scores["P"]) }}</div>
+            <div class="metric-value">{{ "%.1f"|format(result["dimension_scores"]["P"]) }}</div>
         </div>
 
         <div class="metric-card">
             <div>{{ t_page.responsibility }}</div>
-            <div class="metric-value">{{ "%.1f"|format(result.dimension_scores["R"]) }}</div>
+            <div class="metric-value">{{ "%.1f"|format(result["dimension_scores"]["R"]) }}</div>
         </div>
 
         <div class="metric-card">
             <div>{{ t_page.adoption }}</div>
-            <div class="metric-value">{{ "%.1f"|format(result.dimension_scores["A"]) }}</div>
+            <div class="metric-value">{{ "%.1f"|format(result["dimension_scores"]["A"]) }}</div>
         </div>
+    </div>
+
+    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08);">
+        <p style="font-size: 13px; color: #8fa1c2; margin-bottom: 12px;">
+            {{ "Diese KPIs zur Analyse hinzufügen?" if (lang == "de") else "Transfer these KPIs to the Analysis page?" }}
+        </p>
+        <button type="button" id="transferToAnalysis"
+                style="background: rgba(125, 211, 252, 0.12);
+                       border: 1px solid rgba(125, 211, 252, 0.25);
+                       color: var(--primary);
+                       padding: 10px 18px;
+                       border-radius: 8px;
+                       cursor: pointer;
+                       font-weight: 600;
+                       font-size: 13px;">
+            {{ "Zur Analyse übertragen →" if (lang == "de") else "Transfer to Analysis →" }}
+        </button>
     </div>
 </div>
 {% endif %}

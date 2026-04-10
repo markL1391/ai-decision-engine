@@ -4,6 +4,22 @@
 
 {% block content %}
 
+<!-- Loading Overlay -->
+<div id="loadingOverlay" style="display:none; position:fixed; inset:0; width:100vw; height:100vh; background:url('/static/images/network-bg.png') center center / cover no-repeat, radial-gradient(ellipse at center, rgba(15,23,42,0.7) 0%, rgba(2,6,23,0.85) 100%); backdrop-filter:blur(4px); align-items:center; justify-content:center; flex-direction:column; z-index:99999;">
+    <div class="loading-network">
+        <div class="node node-1"></div>
+        <div class="node node-2"></div>
+        <div class="node node-3"></div>
+        <div class="node node-center"></div>
+    </div>
+    <div class="loading-box">
+        <div class="loading-title">{{ "KI deckt verborgene Systembeschränkungen auf" if (lang == "de") else "AI is revealing hidden system constraints" }}</div>
+        <div class="loading-subtitle">
+            {{ "Signale werden verknüpft, Abhängigkeiten analysiert und in operative Erkenntnisse übersetzt." if (lang == "de") else "Connecting signals, mapping dependencies, and translating them into operational insight." }}
+        </div>
+    </div>
+</div>
+
 {% set t_page = {
     "hero_badge": "Benchmark-Modus" if lang == "de" else "Benchmark Mode",
     "hero_title": "Multi-Unternehmens-Benchmark" if lang == "de" else "Multi-Company Benchmark Demo",
@@ -15,10 +31,14 @@
     "company": "Unternehmen" if lang == "de" else "Company",
     "industry": "Branche" if lang == "de" else "Industry",
 
-    "technology": "Technologie" if lang == "de" else "Technology",
-    "process": "Prozess" if lang == "de" else "Process",
-    "responsibility": "Verantwortung" if lang == "de" else "Responsibility",
-    "adoption": "Akzeptanz" if lang == "de" else "Adoption",
+    "dim_T": "Technologie" if lang == "de" else "Technology",
+    "dim_P": "Prozess" if lang == "de" else "Process",
+    "dim_R": "Verantwortung" if lang == "de" else "Responsibility",
+    "dim_A": "Akzeptanz" if lang == "de" else "Adoption",
+    "dim_T_short": "Tech." if lang == "de" else "Tech.",
+    "dim_P_short": "Proz." if lang == "de" else "Proc.",
+    "dim_R_short": "Verant." if lang == "de" else "Resp.",
+    "dim_A_short": "Akz." if lang == "de" else "Adop.",
 
     "readiness": "Bereitschaft" if lang == "de" else "Readiness",
     "feasibility": "Machbarkeit" if lang == "de" else "Feasibility",
@@ -73,10 +93,10 @@
                     <th>{{ t_page.rank }}</th>
                     <th>{{ t_page.company }}</th>
                     <th>{{ t_page.industry }}</th>
-                    <th>{{ t_page.technology }}</th>
-                    <th>{{ t_page.process }}</th>
-                    <th>{{ t_page.responsibility }}</th>
-                    <th>{{ t_page.adoption }}</th>
+                    <th>{{ t_page.dim_T_short }}</th>
+                    <th>{{ t_page.dim_P_short }}</th>
+                    <th>{{ t_page.dim_R_short }}</th>
+                    <th>{{ t_page.dim_A_short }}</th>
                     <th>{{ t_page.readiness }}</th>
                     <th>{{ t_page.feasibility }}</th>
                     <th>{{ t_page.risk }}</th>
@@ -184,19 +204,19 @@
 
         <div class="grid" style="margin-top:14px;">
             <div class="metric-card">
-                <div>{{ t_page.technology }}</div>
+                <div>{{ t_page.dim_T }}</div>
                 <div class="metric-value">{{ "%.1f"|format(company.scores["T"]) }}</div>
             </div>
             <div class="metric-card">
-                <div>{{ t_page.process }}</div>
+                <div>{{ t_page.dim_P }}</div>
                 <div class="metric-value">{{ "%.1f"|format(company.scores["P"]) }}</div>
             </div>
             <div class="metric-card">
-                <div>{{ t_page.responsibility }}</div>
+                <div>{{ t_page.dim_R }}</div>
                 <div class="metric-value">{{ "%.1f"|format(company.scores["R"]) }}</div>
             </div>
             <div class="metric-card">
-                <div>{{ t_page.adoption }}</div>
+                <div>{{ t_page.dim_A }}</div>
                 <div class="metric-value">{{ "%.1f"|format(company.scores["A"]) }}</div>
             </div>
         </div>
@@ -233,5 +253,22 @@
     </div>
     {% endfor %}
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Show loading animation immediately
+    const overlay = document.getElementById("loadingOverlay");
+    if (overlay) {
+        overlay.style.display = "flex";
+    }
+    
+    // Hide loading after a short delay
+    setTimeout(function() {
+        if (overlay) {
+            overlay.style.display = "none";
+        }
+    }, 1500);
+});
+</script>
 
 {% endblock %}

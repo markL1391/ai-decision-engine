@@ -42,6 +42,22 @@
 
 } %}
 
+<!-- Loading Overlay -->
+<div id="loadingOverlay" style="display:none; position:fixed; inset:0; width:100vw; height:100vh; background:url('/static/images/network-bg.png') center center / cover no-repeat, radial-gradient(ellipse at center, rgba(15,23,42,0.7) 0%, rgba(2,6,23,0.85) 100%); backdrop-filter:blur(4px); align-items:center; justify-content:center; flex-direction:column; z-index:99999;">
+    <div class="loading-network">
+        <div class="node node-1"></div>
+        <div class="node node-2"></div>
+        <div class="node node-3"></div>
+        <div class="node node-center"></div>
+    </div>
+    <div class="loading-box">
+        <div class="loading-title">{{ "KI deckt verborgene Systembeschränkungen auf" if (lang == "de") else "AI is revealing hidden system constraints" }}</div>
+        <div class="loading-subtitle">
+            {{ "Signale werden verknüpft, Abhängigkeiten analysiert und in operative Erkenntnisse übersetzt." if (lang == "de") else "Connecting signals, mapping dependencies, and translating them into operational insight." }}
+        </div>
+    </div>
+</div>
+
 <!-- Hero -->
 <div class="card hero-card">
     <div class="hero-badge">{{ t_page.hero_badge }}</div>
@@ -57,7 +73,7 @@
 <div class="card">
     <h2>{{ t_page.input_title }}</h2>
 
-    <form method="POST" action="{{ url_for('api.ai_mapping_demo') }}?lang={{ lang }}">
+    <form method="POST" action="{{ url_for('api.ai_mapping_demo') }}?lang={{ lang }}" id="mappingForm">
         <label for="kpi_name">{{ t_page.kpi_name }}</label>
 
         <input id="kpi_name"
@@ -66,9 +82,57 @@
                placeholder="{{ t_page.placeholder }}"
                required>
 
-        <button type="submit">{{ t_page.submit }}</button>
+        <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+            <button type="submit" style="padding: 10px 18px; border-radius: 10px; font-size: 14px; font-weight: 600;">{{ t_page.submit }}</button>
+            <button type="button" id="randomKPI"
+                    style="padding: 10px 18px;
+                           background: rgba(255,255,255,0.06);
+                           border: 1px solid rgba(140,165,255,0.22);
+                           box-shadow: none;
+                           color: #c8d5f3;
+                           font-weight: 600;
+                           border-radius: 10px;
+                           cursor: pointer;
+                           font-size: 14px;">
+                {{ "Zufälliger KPI" if (lang == "de") else "Random KPI" }}
+            </button>
+        </div>
     </form>
 </div>
+
+<script>
+const sampleKPIs = [
+    {% if lang == "de" %}
+    "Bestellungs-Bearbeitungszeit in Minuten",
+    "Systemausfallzeit pro Monat",
+    "Mitarbeiter-Schulungsquote",
+    "Fehlerquote bei Retouren",
+    "SLA-Einhaltungsrate",
+    "Change-Request-Durchlaufzeit",
+    "Tool-Nutzungsrate im Team",
+    "Incident-Reaktionszeit",
+    "Prozess-Standardisierungsgrad",
+    "Kundenzufriedenheits-Score"
+    {% else %}
+    "Order processing time in minutes",
+    "System downtime per month",
+    "Employee training coverage rate",
+    "Return error rate",
+    "SLA compliance rate",
+    "Change request lead time",
+    "Team tool adoption rate",
+    "Incident response time",
+    "Process standardization level",
+    "Customer satisfaction score"
+    {% endif %}
+];
+
+document.getElementById("randomKPI")?.addEventListener("click", function() {
+    const randomIndex = Math.floor(Math.random() * sampleKPIs.length);
+    document.getElementById("kpi_name").value = sampleKPIs[randomIndex];
+    document.getElementById("kpi_name").focus();
+});
+</script>
 
 {% if suggestion %}
 <!-- Result -->
@@ -78,7 +142,9 @@
     <div class="grid">
         <div class="metric-card">
             <div>{{ t_page.dimension }}</div>
-            <div class="metric-value">{{ suggestion.dimension }}</div>
+            <div class="metric-value">
+                {{ suggestion.dimension_label if suggestion.dimension_label else suggestion.dimension }}
+            </div>
         </div>
 
         <div class="metric-card">
@@ -88,7 +154,78 @@
             </div>
         </div>
     </div>
+
+    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08);">
+        <p style="font-size: 13px; color: #8fa1c2; margin-bottom: 10px;">
+            {{ "Diesen KPI zu Custom KPIs hinzufügen?" if (lang == "de") else "Add this KPI to Custom KPIs?" }}
+        </p>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <button type="button" id="addToCustomKpis"
+                    style="background: rgba(125, 211, 252, 0.12);
+                           border: 1px solid rgba(125, 211, 252, 0.25);
+                           color: var(--primary);
+                           padding: 10px 18px;
+                           border-radius: 10px;
+                           cursor: pointer;
+                           font-weight: 600;
+                           font-size: 14px;">
+                {{ "Zu Custom KPIs hinzufügen →" if (lang == "de") else "Add to Custom KPIs →" }}
+            </button>
+        </div>
+    </div>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Show loading animation immediately
+    const overlay = document.getElementById("loadingOverlay");
+    if (overlay) {
+        overlay.style.display = "flex";
+    }
+    
+    // Hide loading after a short delay
+    setTimeout(function() {
+        if (overlay) {
+            overlay.style.display = "none";
+        }
+    }, 1500);
+    
+    document.getElementById("addToCustomKpis")?.addEventListener("click", function() {
+        const isGerman = document.documentElement.lang === "de";
+        const kpiNameInput = document.getElementById("kpi_name");
+        const kpiName = kpiNameInput ? kpiNameInput.value.trim() : "";
+        const dimension = "{{ suggestion.dimension }}";
+        const reason = "{{ suggestion.reason }}";
+        
+        if (!kpiName) {
+            alert(isGerman ? "Bitte gib einen KPI-Namen ein." : "Please enter a KPI name.");
+            return;
+        }
+        
+        const kpi = {
+            name: kpiName,
+            value: 0,
+            direction: "higher_better",
+            dimension: dimension,
+            thresholds: [0, 0, 0],
+            reason: reason
+        };
+        
+        let existing = JSON.parse(sessionStorage.getItem("customKPIs") || "[]");
+        existing.push(kpi);
+        sessionStorage.setItem("customKPIs", JSON.stringify(existing));
+        
+        const msg = isGerman ? "KPI wurde hinzugefügt!" : "KPI added!";
+        const btn = document.getElementById("addToCustomKpis");
+        btn.textContent = msg;
+        btn.style.background = "rgba(125, 211, 252, 0.25)";
+        
+        setTimeout(() => {
+            window.location.href = "/custom-kpi-demo?lang=" + (isGerman ? "de" : "en");
+        }, 800);
+    });
+});
+</script>
 {% endif %}
 
 <!-- Guide -->

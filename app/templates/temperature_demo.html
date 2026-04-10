@@ -1,55 +1,69 @@
 {% extends "base.html" %}
 
 {% block title %}
-{{ "Temperaturvergleich – Explainable Decision Engine" if lang == "de" else "Temperature Compare – Explainable Decision Engine" }}
+{{ "LLM-Analyse – Explainable Decision Engine" if lang == "de" else "LLM Analysis – Explainable Decision Engine" }}
 {% endblock %}
 
 {% block content %}
 
 {% set t_page = {
+    "hero_badge": "LLM-Analyse" if lang == "de" else "LLM Analysis",
+    "hero_title": "Unternehmensanalyse mit KI" if lang == "de" else "AI Company Analysis",
+    "hero_tagline": "Analysiere Unternehmen mit strukturierten KI-Empfehlungen." if lang == "de" else "Analyze companies with structured AI recommendations.",
+    "hero_desc": "Wähle ein Unternehmen aus, analysiere die Eingabedaten und erhalte strukturierte Handlungsempfehlungen von der KI." if lang == "de" else "Select a company, review the input data, and receive structured AI-powered recommendations.",
 
-    "hero_badge": "Vergleichsanalyse" if lang == "de" else "Comparative Analysis",
-    "hero_title": "Temperaturvergleich" if lang == "de" else "Temperature Comparison",
-    "hero_tagline": "Vergleiche Modellantworten mit unterschiedlichen Temperatureinstellungen." if lang == "de" else "Compare model outputs under different temperature settings.",
-    "hero_desc": "Diese Ansicht hilft dir zu erkennen, wie sich das Antwortverhalten verändert, wenn dasselbe Assessment mit unterschiedlichen Temperatureinstellungen generiert wird." if lang == "de" else "This view helps you inspect how response behavior changes when the same assessment is generated with different temperature settings.",
+    "select_company": "Unternehmen auswählen" if lang == "de" else "Select Company",
+    "select_scenario": "Szenario wählen" if lang == "de" else "Choose Scenario",
+    "run_analysis": "Analyse starten" if lang == "de" else "Run Analysis",
 
-    "run_title": "Vergleich starten" if lang == "de" else "Run Comparison",
-    "assessment": "Assessment",
-    "temp_a": "Temperatur A" if lang == "de" else "Temperature A",
-    "temp_b": "Temperatur B" if lang == "de" else "Temperature B",
-    "compare": "Vergleichen" if lang == "de" else "Compare",
+    "results": "Analyseergebnisse" if lang == "de" else "Analysis Results",
+    "input_data": "Eingabedaten" if lang == "de" else "Input Data",
+    "scores": "Dimensions-Scores" if lang == "de" else "Dimension Scores",
 
-    "results": "Ergebnisse" if lang == "de" else "Results",
-    "low_temp": "Niedrige Temperatur" if lang == "de" else "Low Temperature",
-    "high_temp": "Hohe Temperatur" if lang == "de" else "High Temperature",
+    "technology": "Technologie" if lang == "de" else "Technology",
+    "process": "Prozess" if lang == "de" else "Process",
+    "responsibility": "Verantwortung" if lang == "de" else "Responsibility",
+    "adoption": "Akzeptanz" if lang == "de" else "Adoption",
 
-    "diagnosis": "Diagnose" if lang == "de" else "Diagnosis",
-    "impact": "Operative Auswirkungen" if lang == "de" else "Operational Impact",
-    "gap": "Kapazitätslücke" if lang == "de" else "Capacity Gap",
+    "overall_readiness": "Gesamtbereitschaft" if lang == "de" else "Overall Readiness",
+    "transition": "Übergang" if lang == "de" else "Transition",
+    "possible": "Möglich" if lang == "de" else "Possible",
+    "not_possible": "Nicht möglich" if lang == "de" else "Not possible",
+    "risk": "Risiko" if lang == "de" else "Risk",
 
-    "loading_title": "KI vergleicht Temperaturverhalten" if lang == "de" else "AI is comparing temperature behavior",
-    "loading_text": "Antwortverhalten und strukturelle Unterschiede werden analysiert..." if lang == "de" else "Analyzing response behavior and structural differences...",
+    "temp_settings": "Temperatureinstellungen" if lang == "de" else "Temperature Settings",
+    "temp_a_label": "Stil A – Fokussiert" if lang == "de" else "Style A – Focused",
+    "temp_b_label": "Stil B – Kreativ" if lang == "de" else "Style B – Creative",
+    "temp_a_desc": "Deterministisch, konsistent. Für belastbare Analyseergebnisse." if lang == "de" else "Deterministic, consistent. For reliable analysis results.",
+    "temp_b_desc": "Variabel, explorativ. Für alternative Perspektiven und Ideen." if lang == "de" else "Variable, exploratory. For alternative perspectives.",
 
-    "error_generic": "Etwas ist schiefgelaufen. Bitte versuche es erneut." if lang == "de" else "Something went wrong. Please try again.",
-    "error_connection": "Verbindungsfehler. Bitte versuche es erneut." if lang == "de" else "Connection error. Please try again."
+    "ai_summary_a": "KI-Zusammenfassung (Stil A)" if lang == "de" else "AI Summary (Style A)",
+    "ai_summary_b": "KI-Zusammenfassung (Stil B)" if lang == "de" else "AI Summary (Style B)",
+    "top_priorities": "Top-Prioritäten" if lang == "de" else "Top Priorities",
+    "lever": "Größter Hebel" if lang == "de" else "Main Lever",
+    "next_step": "Nächster Schritt" if lang == "de" else "Next Step",
+
+    "bottlenecks": "Strukturelle Engpässe" if lang == "de" else "Structural Bottlenecks",
+
+    "loading_title": "KI analysiert Unternehmen" if lang == "de" else "AI is analyzing company",
+    "loading_text": "Zwei Antworten werden generiert..." if lang == "de" else "Generating two responses...",
+
+    "error_generic": "Analyse fehlgeschlagen. Bitte erneut versuchen." if lang == "de" else "Analysis failed. Please try again."
 } %}
 
 <!-- Loading Overlay -->
-<div id="loadingOverlay" class="loading-overlay">
-    <div class="loading-network glow-network">
+<div id="loadingOverlay" style="display:none; position:fixed; inset:0; width:100vw; height:100vh; background:url('/static/images/network-bg.png') center center / cover no-repeat, radial-gradient(ellipse at center, rgba(15,23,42,0.7) 0%, rgba(2,6,23,0.85) 100%); backdrop-filter:blur(4px); align-items:center; justify-content:center; flex-direction:column; z-index:99999;">
+    <div class="loading-network">
         <div class="node node-1"></div>
         <div class="node node-2"></div>
         <div class="node node-3"></div>
-        <div class="node node-4"></div>
-
-        <div class="beam beam-1"></div>
-        <div class="beam beam-2"></div>
-        <div class="beam beam-3"></div>
+        <div class="node node-center"></div>
     </div>
-
     <div class="loading-box">
-        <div class="loading-title">{{ t_page.loading_title }}</div>
-        <div class="loading-subtitle">{{ t_page.loading_text }}</div>
+        <div class="loading-title">{{ "KI deckt verborgene Systembeschränkungen auf" if (lang == "de") else "AI is revealing hidden system constraints" }}</div>
+        <div class="loading-subtitle">
+            {{ "Signale werden verknüpft, Abhängigkeiten analysiert und in operative Erkenntnisse übersetzt." if (lang == "de") else "Connecting signals, mapping dependencies, and translating them into operational insight." }}
+        </div>
     </div>
 </div>
 
@@ -61,174 +75,594 @@
     <p class="hero-description">{{ t_page.hero_desc }}</p>
 </div>
 
-<!-- Run Comparison -->
+<!-- Company Selection -->
 <div class="card">
-    <h2>{{ t_page.run_title }}</h2>
+    <h2>{{ t_page.select_company }}</h2>
 
-    <form id="tempForm">
-        <label for="assessment_id">{{ t_page.assessment }}</label>
-        <select id="assessment_id" required>
-            {% for a in assessments %}
-            <option value="{{ a.id }}">Assessment {{ a.id }}</option>
-            {% endfor %}
+    <div style="margin-bottom: 16px;">
+        <label for="scenarioSelect" style="font-size: 14px; color: var(--text-soft); margin-bottom: 8px; display: block;">
+            {{ t_page.select_scenario }}
+        </label>
+        <select id="scenarioSelect" style="width: 100%; padding: 12px 14px; border-radius: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.10); color: var(--text); font-size: 14px;">
         </select>
+    </div>
 
-        <label for="tempA">{{ t_page.temp_a }}</label>
-        <input id="tempA" type="number" step="0.1" value="0.2" required>
+    <!-- Temperature Settings -->
+    <div style="margin-bottom: 16px;">
+        <label style="font-size: 14px; color: var(--text-soft); margin-bottom: 12px; display: block;">
+            {{ t_page.temp_settings }}
+        </label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div style="padding: 12px; background: rgba(125,211,252,0.06); border-radius: 10px; border: 1px solid rgba(125,211,252,0.15);">
+                <div style="font-size: 12px; font-weight: 600; color: var(--primary); margin-bottom: 6px;">
+                    {{ t_page.temp_a_label }}
+                </div>
+                <input type="number" id="tempA" value="0.2" min="0" max="2" step="0.1"
+                       style="width: 100%; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid rgba(125,211,252,0.2); color: var(--text); font-size: 14px;">
+                <div style="font-size: 11px; color: var(--text-soft); margin-top: 6px;">{{ t_page.temp_a_desc }}</div>
+            </div>
+            <div style="padding: 12px; background: rgba(129,140,248,0.06); border-radius: 10px; border: 1px solid rgba(129,140,248,0.15);">
+                <div style="font-size: 12px; font-weight: 600; color: var(--primary-2); margin-bottom: 6px;">
+                    {{ t_page.temp_b_label }}
+                </div>
+                <input type="number" id="tempB" value="0.8" min="0" max="2" step="0.1"
+                       style="width: 100%; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid rgba(129,140,248,0.2); color: var(--text); font-size: 14px;">
+                <div style="font-size: 11px; color: var(--text-soft); margin-top: 6px;">{{ t_page.temp_b_desc }}</div>
+            </div>
+        </div>
+    </div>
 
-        <label for="tempB">{{ t_page.temp_b }}</label>
-        <input id="tempB" type="number" step="0.1" value="0.8" required>
-
-        <button type="submit">{{ t_page.compare }}</button>
-    </form>
+    <button type="button" id="runAnalysisBtn" style="padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 600;">
+        {{ t_page.run_analysis }}
+    </button>
 </div>
 
-<!-- Results -->
-<div id="result" class="card" style="display:none;">
-    <h2>{{ t_page.results }}</h2>
-
-    <div class="hero-mode-grid">
-        <div class="hero-mode-card">
-            <h3>{{ t_page.low_temp }}</h3>
-            <div id="outputA" class="temp-output-stack"></div>
+<!-- Input Data Display -->
+<div id="inputDataCard" class="card" style="display: none;">
+    <h2>{{ t_page.input_data }}</h2>
+    
+    <div id="companyInfo" style="margin-bottom: 20px; padding: 14px; background: rgba(125, 211, 252, 0.06); border-radius: 12px; border: 1px solid rgba(125, 211, 252, 0.15);">
+        <div style="font-size: 18px; font-weight: 700; color: var(--primary); margin-bottom: 4px;">
+            <span id="displayCompanyName"></span>
         </div>
+        <div style="font-size: 13px; color: #8fa1c2;" id="displayCompanyIndustry"></div>
+    </div>
 
-        <div class="hero-mode-card">
-            <h3>{{ t_page.high_temp }}</h3>
-            <div id="outputB" class="temp-output-stack"></div>
+    <div class="grid" style="margin-bottom: 16px;">
+        <div class="metric-card">
+            <div>Automatisierungsgrad</div>
+            <div class="metric-value" id="displayAutomation">-</div>
+        </div>
+        <div class="metric-card">
+            <div>Systemverfügbarkeit</div>
+            <div class="metric-value" id="displayAvailability">-</div>
+        </div>
+        <div class="metric-card">
+            <div>Fehlerquote</div>
+            <div class="metric-value" id="displayErrorRate">-</div>
+        </div>
+        <div class="metric-card">
+            <div>Bearbeitungszeit</div>
+            <div class="metric-value" id="displayProcessingTime">-</div>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="metric-card">
+            <div>Prozessstandardisierung</div>
+            <div class="metric-value" id="displayProcessStd" style="font-size: 14px;">-</div>
+        </div>
+        <div class="metric-card">
+            <div>Rollenklarheit</div>
+            <div class="metric-value" id="displayRoleClarity" style="font-size: 14px;">-</div>
+        </div>
+        <div class="metric-card">
+            <div>Verantwortungsdefinition</div>
+            <div class="metric-value" id="displayOwnership" style="font-size: 14px;">-</div>
+        </div>
+    </div>
+
+    <div class="grid" style="margin-top: 16px;">
+        <div class="metric-card">
+            <div>Schulungsabdeckung</div>
+            <div class="metric-value" id="displayTraining">-</div>
+        </div>
+        <div class="metric-card">
+            <div>Tool-Nutzung</div>
+            <div class="metric-value" id="displayToolAdoption">-</div>
+        </div>
+        <div class="metric-card">
+            <div>Change-Kommunikation</div>
+            <div class="metric-value" id="displayChangeComm" style="font-size: 14px;">-</div>
         </div>
     </div>
 </div>
 
-<style>
-.temp-output-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-top: 10px;
-}
+<!-- Results -->
+<div id="resultsCard" class="card" style="display: none;">
+    <h2>{{ t_page.results }}</h2>
 
-.temp-output-stack .metric-card {
-    margin-bottom: 0;
-}
+    <!-- Score Overview -->
+    <div style="margin-bottom: 24px;">
+        <h3 style="font-size: 14px; color: var(--text-soft); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">
+            {{ t_page.scores }}
+        </h3>
+        <div class="grid">
+            <div class="metric-card">
+                <div>{{ t_page.technology }}</div>
+                <div class="metric-value" id="scoreT">-</div>
+            </div>
+            <div class="metric-card">
+                <div>{{ t_page.process }}</div>
+                <div class="metric-value" id="scoreP">-</div>
+            </div>
+            <div class="metric-card">
+                <div>{{ t_page.responsibility }}</div>
+                <div class="metric-value" id="scoreR">-</div>
+            </div>
+            <div class="metric-card">
+                <div>{{ t_page.adoption }}</div>
+                <div class="metric-value" id="scoreA">-</div>
+            </div>
+        </div>
+    </div>
 
-.temp-output-stack h4 {
-    margin: 0 0 8px 0;
-    font-size: 14px;
-    color: #ffffff;
-}
+    <!-- Overall Stats -->
+    <div id="overallStats" class="grid" style="margin-bottom: 24px;">
+    </div>
 
-.temp-output-stack ul {
-    margin: 0;
-    padding-left: 18px;
-    color: #d6dff5;
-    line-height: 1.6;
-}
+    <!-- Bottlenecks -->
+    <div id="bottlenecksSection" style="margin-bottom: 24px;">
+        <h3 style="font-size: 14px; color: var(--text-soft); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">
+            {{ t_page.bottlenecks }}
+        </h3>
+        <div id="bottlenecksList"></div>
+    </div>
 
-.glow-network .node {
-    animation: pulseGlow 1.5s infinite ease-in-out;
-}
+    <!-- AI Comparison -->
+    <div style="margin-bottom: 24px;">
+        <h3 style="font-size: 14px; color: var(--text-soft); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em;">
+            KI-Vergleich
+        </h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <!-- Style A -->
+            <div>
+                <div style="padding: 10px 14px; background: rgba(125,211,252,0.10); border-radius: 10px 10px 0 0; border: 1px solid rgba(125,211,252,0.20); border-bottom: none;">
+                    <span style="font-size: 12px; font-weight: 700; color: var(--primary);">
+                        {{ t_page.temp_a_label }} (T={{ '<span id="tempAValue">0.2</span>' }})
+                    </span>
+                </div>
+                <div style="padding: 14px; background: rgba(125,211,252,0.04); border-radius: 0 0 10px 10px; border: 1px solid rgba(125,211,252,0.20); border-top: none;">
+                    <div id="summaryA" class="summary-box" style="font-size: 13px;"></div>
+                </div>
+            </div>
+            <!-- Style B -->
+            <div>
+                <div style="padding: 10px 14px; background: rgba(129,140,248,0.10); border-radius: 10px 10px 0 0; border: 1px solid rgba(129,140,248,0.20); border-bottom: none;">
+                    <span style="font-size: 12px; font-weight: 700; color: var(--primary-2);">
+                        {{ t_page.temp_b_label }} (T=<span id="tempBValue">0.8</span>)
+                    </span>
+                </div>
+                <div style="padding: 14px; background: rgba(129,140,248,0.04); border-radius: 0 0 10px 10px; border: 1px solid rgba(129,140,248,0.20); border-top: none;">
+                    <div id="summaryB" class="summary-box" style="font-size: 13px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-.glow-network .beam {
-    animation: beamPulse 1.4s infinite ease-in-out;
-}
+    <!-- Top Priorities -->
+    <div id="prioritiesSection" style="margin-bottom: 24px;">
+        <h3 style="font-size: 14px; color: var(--text-soft); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">
+            {{ t_page.top_priorities }}
+        </h3>
+        <div id="prioritiesList"></div>
+    </div>
 
-@keyframes pulseGlow {
-    0%, 100% {
-        transform: scale(1);
-        box-shadow: 0 0 12px rgba(124, 156, 255, 0.55);
-        opacity: 0.75;
-    }
-    50% {
-        transform: scale(1.22);
-        box-shadow: 0 0 24px rgba(142, 216, 255, 0.95);
-        opacity: 1;
-    }
-}
+    <!-- Lever -->
+    <div id="leverSection" style="margin-bottom: 24px;">
+        <h3 style="font-size: 14px; color: var(--text-soft); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">
+            {{ t_page.lever }}
+        </h3>
+        <div id="leverContent" class="metric-card"></div>
+    </div>
 
-@keyframes beamPulse {
-    0%, 100% {
-        opacity: 0.35;
-        filter: drop-shadow(0 0 2px rgba(124,156,255,0.3));
-    }
-    50% {
-        opacity: 1;
-        filter: drop-shadow(0 0 10px rgba(142,216,255,0.75));
-    }
-}
-</style>
+    <!-- Next Step -->
+    <div id="nextStepSection">
+        <h3 style="font-size: 14px; color: var(--text-soft); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em;">
+            {{ t_page.next_step }}
+        </h3>
+        <div id="nextStepContent" class="metric-card"></div>
+    </div>
+</div>
 
-<!-- Page Script -->
 <script>
-const labels = {
-    diagnosis: {{ t_page.diagnosis|tojson }},
-    impact: {{ t_page.impact|tojson }},
-    gap: {{ t_page.gap|tojson }},
-    errorGeneric: {{ t_page.error_generic|tojson }},
-    errorConnection: {{ t_page.error_connection|tojson }}
-};
+// Global error handler for debugging
+window.addEventListener("error", function(e) {
+    console.error("JavaScript error:", e.message, "at", e.filename, "line", e.lineno);
+});
 
-function renderSection(title, items) {
-    const safeItems = Array.isArray(items) ? items : [];
-    return `
+const scenarios = [
+    {% if lang == "de" %}
+    {
+        id: "nordic",
+        company_id: "Nordic Express Logistics GmbH",
+        industry: "Internationale Logistik",
+        automation_rate: 71, system_availability: 96, error_rate: 7.8, order_processing_time: 16,
+        process_standardization: "Hoch", role_clarity: "Klar", ownership_definition: "Formal",
+        training_coverage: 42, tool_adoption: 64, change_communication: "Strukturiert"
+    },
+    {
+        id: "precision",
+        company_id: "Precision Parts Manufacturing AG",
+        industry: "Spezialmaschinenbau",
+        automation_rate: 48, system_availability: 94, error_rate: 4.1, order_processing_time: 22,
+        process_standardization: "Hoch", role_clarity: "Klar", ownership_definition: "Verankert",
+        training_coverage: 58, tool_adoption: 38, change_communication: "Eingebettet"
+    },
+    {
+        id: "urbanbox",
+        company_id: "UrbanBox E-Commerce GmbH",
+        industry: "Online-Handel",
+        automation_rate: 34, system_availability: 87, error_rate: 12.2, order_processing_time: 38,
+        process_standardization: "Niedrig", role_clarity: "Teilweise", ownership_definition: "Informell",
+        training_coverage: 24, tool_adoption: 31, change_communication: "Unregelmäßig"
+    },
+    {
+        id: "biosynth",
+        company_id: "BioSynth Pharmaceutical SE",
+        industry: "Pharmazeutische Industrie",
+        automation_rate: 82, system_availability: 99, error_rate: 1.4, order_processing_time: 8,
+        process_standardization: "Vollst. standardisiert", role_clarity: "Vollst. definiert", ownership_definition: "Verankert",
+        training_coverage: 89, tool_adoption: 81, change_communication: "Eingebettet"
+    },
+    {
+        id: "metro",
+        company_id: "Metro Retail Solutions KG",
+        industry: "Einzelhandel",
+        automation_rate: 52, system_availability: 92, error_rate: 6.3, order_processing_time: 24,
+        process_standardization: "Mittel", role_clarity: "Klar", ownership_definition: "Formal",
+        training_coverage: 65, tool_adoption: 44, change_communication: "Strukturiert"
+    },
+    {
+        id: "cloudscale",
+        company_id: "CloudScale Technologies GmbH",
+        industry: "Software-as-a-Service",
+        automation_rate: 78, system_availability: 98, error_rate: 2.8, order_processing_time: 12,
+        process_standardization: "Hoch", role_clarity: "Klar", ownership_definition: "Formal",
+        training_coverage: 72, tool_adoption: 86, change_communication: "Eingebettet"
+    }
+    {% else %}
+    {
+        id: "nordic",
+        company_id: "Nordic Express Logistics GmbH",
+        industry: "International Logistics",
+        automation_rate: 71, system_availability: 96, error_rate: 7.8, order_processing_time: 16,
+        process_standardization: "High", role_clarity: "Clear", ownership_definition: "Formal",
+        training_coverage: 42, tool_adoption: 64, change_communication: "Structured"
+    },
+    {
+        id: "precision",
+        company_id: "Precision Parts Manufacturing AG",
+        industry: "Special Machinery",
+        automation_rate: 48, system_availability: 94, error_rate: 4.1, order_processing_time: 22,
+        process_standardization: "High", role_clarity: "Clear", ownership_definition: "Enforced",
+        training_coverage: 58, tool_adoption: 38, change_communication: "Embedded"
+    },
+    {
+        id: "urbanbox",
+        company_id: "UrbanBox E-Commerce GmbH",
+        industry: "Online Retail",
+        automation_rate: 34, system_availability: 87, error_rate: 12.2, order_processing_time: 38,
+        process_standardization: "Low", role_clarity: "Partial", ownership_definition: "Informal",
+        training_coverage: 24, tool_adoption: 31, change_communication: "Irregular"
+    },
+    {
+        id: "biosynth",
+        company_id: "BioSynth Pharmaceutical SE",
+        industry: "Pharmaceutical Industry",
+        automation_rate: 82, system_availability: 99, error_rate: 1.4, order_processing_time: 8,
+        process_standardization: "Fully standardized", role_clarity: "Fully defined", ownership_definition: "Enforced",
+        training_coverage: 89, tool_adoption: 81, change_communication: "Embedded"
+    },
+    {
+        id: "metro",
+        company_id: "Metro Retail Solutions KG",
+        industry: "Retail",
+        automation_rate: 52, system_availability: 92, error_rate: 6.3, order_processing_time: 24,
+        process_standardization: "Medium", role_clarity: "Clear", ownership_definition: "Formal",
+        training_coverage: 65, tool_adoption: 44, change_communication: "Structured"
+    },
+    {
+        id: "cloudscale",
+        company_id: "CloudScale Technologies GmbH",
+        industry: "Software-as-a-Service",
+        automation_rate: 78, system_availability: 98, error_rate: 2.8, order_processing_time: 12,
+        process_standardization: "High", role_clarity: "Clear", ownership_definition: "Formal",
+        training_coverage: 72, tool_adoption: 86, change_communication: "Embedded"
+    }
+    {% endif %}
+];
+
+let selectedScenario = null;
+
+function populateScenarios() {
+    const select = document.getElementById("scenarioSelect");
+    select.innerHTML = "";
+    scenarios.forEach((s, i) => {
+        const opt = document.createElement("option");
+        opt.value = i;
+        opt.textContent = s.company_id + " (" + s.industry + ")";
+        select.appendChild(opt);
+    });
+    select.selectedIndex = 0;
+    selectedScenario = scenarios[0];
+    displayScenarioData();
+}
+
+function displayScenarioData() {
+    if (!selectedScenario) return;
+    
+    document.getElementById("inputDataCard").style.display = "block";
+    document.getElementById("displayCompanyName").textContent = selectedScenario.company_id;
+    document.getElementById("displayCompanyIndustry").textContent = selectedScenario.industry;
+    
+    document.getElementById("displayAutomation").textContent = selectedScenario.automation_rate + "%";
+    document.getElementById("displayAvailability").textContent = selectedScenario.system_availability + "%";
+    document.getElementById("displayErrorRate").textContent = selectedScenario.error_rate + "%";
+    document.getElementById("displayProcessingTime").textContent = selectedScenario.order_processing_time + " min";
+    
+    document.getElementById("displayProcessStd").textContent = selectedScenario.process_standardization;
+    document.getElementById("displayRoleClarity").textContent = selectedScenario.role_clarity;
+    document.getElementById("displayOwnership").textContent = selectedScenario.ownership_definition;
+    
+    document.getElementById("displayTraining").textContent = selectedScenario.training_coverage + "%";
+    document.getElementById("displayToolAdoption").textContent = selectedScenario.tool_adoption + "%";
+    document.getElementById("displayChangeComm").textContent = selectedScenario.change_communication;
+}
+
+function displayResults(data) {
+    document.getElementById("resultsCard").style.display = "block";
+    
+    // Scores
+    const scores = data.engine_result?.dimension_scores || {};
+    document.getElementById("scoreT").textContent = (scores.T || 0).toFixed(1) + " / 3";
+    document.getElementById("scoreP").textContent = (scores.P || 0).toFixed(1) + " / 3";
+    document.getElementById("scoreR").textContent = (scores.R || 0).toFixed(1) + " / 3";
+    document.getElementById("scoreA").textContent = (scores.A || 0).toFixed(1) + " / 3";
+    
+    // Overall Stats
+    const overall = data.engine_result?.overall_readiness || 0;
+    const feasible = data.engine_result?.transition_feasible;
+    const risk = data.engine_result?.transition_risk || "unknown";
+    const riskColors = { low: "var(--success)", medium: "var(--warning)", high: "var(--danger)" };
+    
+    document.getElementById("overallStats").innerHTML = `
         <div class="metric-card">
-            <h4>${title}</h4>
-            <ul>
-                ${safeItems.map(item => `<li>${item}</li>`).join("")}
-            </ul>
+            <div>Gesamtbereitschaft</div>
+            <div class="metric-value">${overall.toFixed(1)} / 3</div>
+        </div>
+        <div class="metric-card">
+            <div>Übergang</div>
+            <div class="metric-value" style="color: ${feasible ? 'var(--success)' : 'var(--danger)'}">
+                ${feasible ? 'Möglich' : 'Nicht möglich'}
+            </div>
+        </div>
+        <div class="metric-card">
+            <div>Risiko</div>
+            <div class="metric-value" style="color: ${riskColors[risk] || 'var(--text)'}">
+                ${risk.charAt(0).toUpperCase() + risk.slice(1)}
+            </div>
         </div>
     `;
+    
+    // Update temperature display
+    document.getElementById("tempAValue").textContent = data.temperature_a?.toFixed(1) || "0.2";
+    document.getElementById("tempBValue").textContent = data.temperature_b?.toFixed(1) || "0.8";
+    
+    // AI Summaries - Side by side comparison
+    document.getElementById("summaryA").innerHTML = data.summary_a ? `<p>${data.summary_a}</p>` : '<p style="color: var(--text-soft);">-</p>';
+    document.getElementById("summaryB").innerHTML = data.summary_b ? `<p>${data.summary_b}</p>` : '<p style="color: var(--text-soft);">-</p>';
+    
+    // Bottlenecks
+    const bottlenecks = data.engine_result?.bottlenecks || [];
+    if (bottlenecks.length > 0) {
+        document.getElementById("bottlenecksList").innerHTML = bottlenecks.map(b => 
+            `<div class="metric-card" style="margin-bottom: 8px;">
+                <div style="color: var(--danger); font-weight: 600;">${b}</div>
+            </div>`
+        ).join("");
+        document.getElementById("bottlenecksSection").style.display = "block";
+    } else {
+        document.getElementById("bottlenecksSection").style.display = "none";
+    }
+    
+    // Top Priorities
+    const priorities = data.priorities || [];
+    if (priorities.length > 0) {
+        document.getElementById("prioritiesList").innerHTML = priorities.map((p, i) => 
+            `<div class="metric-card" style="margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                    <span style="background: var(--primary); color: #000; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;">${i + 1}</span>
+                    <strong>${p.dimension || ''}</strong>
+                </div>
+                <div style="color: var(--text-soft); font-size: 14px;">${p.action || ''}</div>
+            </div>`
+        ).join("");
+        document.getElementById("prioritiesSection").style.display = "block";
+    } else {
+        document.getElementById("prioritiesSection").style.display = "none";
+    }
+    
+    // Lever
+    if (data.lever) {
+        document.getElementById("leverContent").innerHTML = `
+            <div style="color: var(--primary); font-weight: 600; margin-bottom: 8px;">
+                ${data.lever.dimension || ''}
+            </div>
+            <div style="color: var(--text-soft);">${data.lever.explanation || ''}</div>
+        `;
+        document.getElementById("leverSection").style.display = "block";
+    } else {
+        document.getElementById("leverSection").style.display = "none";
+    }
+    
+    // Next Step
+    if (data.next_step) {
+        document.getElementById("nextStepContent").innerHTML = `
+            <div style="color: var(--text); margin-bottom: 8px;">${data.next_step.action || ''}</div>
+            ${data.next_step.owner ? `<div style="color: var(--text-soft); font-size: 13px;">${data.next_step.owner}</div>` : ''}
+        `;
+        document.getElementById("nextStepSection").style.display = "block";
+    } else {
+        document.getElementById("nextStepSection").style.display = "none";
+    }
+    
+    // Scroll to results
+    document.getElementById("resultsCard").scrollIntoView({ behavior: 'smooth' });
 }
 
-function renderOutput(containerId, data) {
-    const el = document.getElementById(containerId);
-
-    el.innerHTML = `
-        ${renderSection(labels.diagnosis, data.diagnosis)}
-        ${renderSection(labels.impact, data.operational_impact)}
-        ${renderSection(labels.gap, data.capacity_gap)}
-    `;
+function normalizeValue(value) {
+    if (typeof value === 'string') {
+        return value.toLowerCase()
+            .replace(/ö/g, 'oe').replace(/ä/g, 'ae').replace(/ü/g, 'ue')
+            .replace(/ß/g, 'ss')
+            .replace(/\./g, '').replace(/ /g, '_');
+    }
+    return value;
 }
 
-document.getElementById("tempForm").addEventListener("submit", async function (e) {
-    e.preventDefault();
-
+document.addEventListener("DOMContentLoaded", function() {
+    console.log("DOM ready, initializing...");
+    
+    // Show loading animation immediately
     const overlay = document.getElementById("loadingOverlay");
-    const assessment_id = document.getElementById("assessment_id").value;
-    const tempA = document.getElementById("tempA").value;
-    const tempB = document.getElementById("tempB").value;
-    const lang = "{{ lang }}";
-
-    overlay.classList.add("active");
-
-    try {
-        const res = await fetch("/explanations/compare-temperature?lang=" + encodeURIComponent(lang), {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                assessment_id: parseInt(assessment_id),
-                temperature_a: parseFloat(tempA),
-                temperature_b: parseFloat(tempB)
-            })
-        });
-
-        if (!res.ok) {
-            overlay.classList.remove("active");
-            alert(labels.errorGeneric);
+    if (overlay) {
+        overlay.style.display = "flex";
+    }
+    
+    // Hide loading after a short delay
+    setTimeout(function() {
+        if (overlay) {
+            overlay.style.display = "none";
+        }
+    }, 1500);
+    
+    // Initialize scenarios first
+    populateScenarios();
+    
+    document.getElementById("scenarioSelect").addEventListener("change", function() {
+        selectedScenario = scenarios[this.value];
+        displayScenarioData();
+    });
+    
+    document.getElementById("scenarioSelect").addEventListener("change", function() {
+        selectedScenario = scenarios[this.value];
+        displayScenarioData();
+    });
+    
+    document.getElementById("runAnalysisBtn").addEventListener("click", async function() {
+        console.log("Button clicked");
+        
+        if (!selectedScenario) {
+            alert("Bitte wählen Sie ein Unternehmen aus." if document.documentElement.lang === "de" else "Please select a company.");
             return;
         }
-
-        const data = await res.json();
-
-        renderOutput("outputA", data.output_a);
-        renderOutput("outputB", data.output_b);
-
-        document.getElementById("result").style.display = "block";
-        overlay.classList.remove("active");
-    } catch (err) {
-        overlay.classList.remove("active");
-        alert(labels.errorConnection);
-    }
+        
+        const overlay = document.getElementById("loadingOverlay");
+        const resultsCard = document.getElementById("resultsCard");
+        
+        // Ensure overlay is shown and results hidden
+        overlay.style.display = "flex";
+        document.body.style.overflow = "hidden";
+        if (resultsCard) {
+            resultsCard.style.display = "none";
+        }
+        
+        const tempA = parseFloat(document.getElementById("tempA").value) || 0.2;
+        const tempB = parseFloat(document.getElementById("tempB").value) || 0.8;
+        
+        console.log("Starting analysis with:", { tempA, tempB, company: selectedScenario.company_id });
+        
+        // AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+            console.log("Request timeout - aborting");
+            controller.abort();
+        }, 60000); // 60 second timeout
+        
+        try {
+            const payload = {
+                company_id: selectedScenario.company_id,
+                industry: selectedScenario.industry,
+                automation_rate: selectedScenario.automation_rate,
+                system_availability: selectedScenario.system_availability,
+                error_rate: selectedScenario.error_rate,
+                order_processing_time: selectedScenario.order_processing_time,
+                process_standardization: normalizeValue(selectedScenario.process_standardization),
+                role_clarity: normalizeValue(selectedScenario.role_clarity),
+                ownership_definition: normalizeValue(selectedScenario.ownership_definition),
+                training_coverage: selectedScenario.training_coverage,
+                tool_adoption: selectedScenario.tool_adoption,
+                change_communication: normalizeValue(selectedScenario.change_communication),
+                temperature_a: tempA,
+                temperature_b: tempB
+            };
+            
+            console.log("Sending request to /explanations/analyze-company");
+            
+            const response = await fetch("/explanations/analyze-company", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            console.log("Response status:", response.status, response.statusText);
+            
+            const responseText = await response.text();
+            console.log("Response text length:", responseText.length);
+            
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status} - ${responseText.substring(0, 500)}`);
+            }
+            
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (parseErr) {
+                throw new Error("Failed to parse JSON response: " + parseErr.message + "\nResponse: " + responseText.substring(0, 200));
+            }
+            
+            console.log("Analysis result received:", Object.keys(data));
+            
+            if (!data.engine_result) {
+                console.error("engine_result missing. Full data:", data);
+                throw new Error("Invalid response: engine_result is missing");
+            }
+            
+            console.log("Calling displayResults...");
+            displayResults(data);
+            console.log("displayResults completed");
+            
+        } catch (err) {
+            clearTimeout(timeoutId);
+            console.error("Analysis error:", err);
+            
+            let errorMessage = "Analyse fehlgeschlagen: ";
+            if (err.name === 'AbortError') {
+                errorMessage += "Zeitüberschreitung - die KI-Antwort dauert zu lange.";
+            } else {
+                errorMessage += err.message;
+            }
+            alert(errorMessage);
+        } finally {
+            // Always hide loading overlay
+            overlay.style.display = "none";
+            document.body.style.overflow = "";
+            console.log("Loading overlay hidden");
+        }
+    });
 });
 </script>
 

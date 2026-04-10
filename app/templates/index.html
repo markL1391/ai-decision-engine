@@ -1,18 +1,21 @@
 {% extends "base.html" %}
 
-{% block title %}Analyze – Explainable Engine{% endblock %}
+{% block title %}{{ "Analyse – Explainable Engine" if (lang == "de") else "Analyze – Explainable Engine" }}{% endblock %}
 
 {% block content %}
 
 <!-- Loading Overlay -->
-<div id="loadingOverlay" class="loading-overlay">
+<div id="loadingOverlay" style="display:none; position:fixed; inset:0; width:100vw; height:100vh; background:url('/static/images/network-bg.png') center center / cover no-repeat, radial-gradient(ellipse at center, rgba(15,23,42,0.7) 0%, rgba(2,6,23,0.85) 100%); backdrop-filter:blur(4px); align-items:center; justify-content:center; flex-direction:column; z-index:99999;">
     <div class="loading-network">
         <div class="node node-1"></div>
+        <div class="node node-2"></div>
+        <div class="node node-3"></div>
+        <div class="node node-center"></div>
     </div>
     <div class="loading-box">
-        <div class="loading-title">AI is revealing hidden system constraints</div>
+        <div class="loading-title">{{ "KI deckt verborgene Systembeschränkungen auf" if (lang == "de") else "AI is revealing hidden system constraints" }}</div>
         <div class="loading-subtitle">
-            Connecting signals, mapping dependencies, and translating them into operational insight.
+            {{ "Signale werden verknüpft, Abhängigkeiten analysiert und in operative Erkenntnisse übersetzt." if (lang == "de") else "Connecting signals, mapping dependencies, and translating them into operational insight." }}
         </div>
     </div>
 </div>
@@ -38,106 +41,487 @@
         <div class="form-grid">
 
             <div>
-                <label for="company_id">{{ texts.company_label if texts is defined else 'Unternehmen' }}</label>
+                <label for="company_id">{{ texts.company_label if texts is defined else 'Company' }}</label>
                 <input id="company_id" name="company_id" type="text"
-                       placeholder="{{ texts.company_placeholder if texts is defined else 'z.B. Muster GmbH' }}"
+                       placeholder="{{ texts.company_placeholder if texts is defined else 'e.g. Nordic Express GmbH' }}"
                        required>
             </div>
 
             <div>
-                <label for="industry">{{ texts.industry_label if texts is defined else 'Branche' }}</label>
+                <label for="industry">{{ texts.industry_label if texts is defined else 'Industry' }}</label>
                 <input id="industry" name="industry" type="text"
-                       placeholder="{{ texts.industry_placeholder if texts is defined else 'z.B. Logistik' }}">
-                <div class="help">{{ texts.industry_help if texts is defined else 'Optional – verbessert die KI-Empfehlung' }}</div>
+                       placeholder="{{ texts.industry_placeholder if texts is defined else 'e.g. Logistics, Manufacturing' }}">
+                <div class="help">{{ texts.industry_help if texts is defined else 'Optional – improves AI recommendations' }}</div>
             </div>
 
             <div>
-                <label for="automation_rate">Automation Rate (%)</label>
+                <label for="automation_rate">{{ texts.automation_rate_label if texts is defined else 'Automation Rate (%)' }}</label>
                 <input id="automation_rate" name="automation_rate" type="number" min="0" max="100" step="1" required>
-                <div class="help">Anteil automatisierter Abläufe</div>
+                <div class="help">{{ texts.automation_rate_help if texts is defined else 'Share of automated processes' }}</div>
             </div>
 
             <div>
-                <label for="system_availability">System Availability (%)</label>
+                <label for="system_availability">{{ texts.system_availability_label if texts is defined else 'System Availability (%)' }}</label>
                 <input id="system_availability" name="system_availability" type="number" min="0" max="100" step="1" required>
-                <div class="help">Systemverfügbarkeit im Betrieb</div>
+                <div class="help">{{ texts.system_availability_help if texts is defined else 'System uptime in operation' }}</div>
             </div>
 
             <div>
-                <label for="error_rate">Error Rate (%)</label>
+                <label for="error_rate">{{ texts.error_rate_label if texts is defined else 'Error Rate (%)' }}</label>
                 <input id="error_rate" name="error_rate" type="number" min="0" max="100" step="0.1" required>
-                <div class="help">Fehlerquote im Prozess</div>
+                <div class="help">{{ texts.error_rate_help if texts is defined else 'Error rate in the process' }}</div>
             </div>
 
             <div>
-                <label for="order_processing_time">Order Processing Time (min)</label>
+                <label for="order_processing_time">{{ texts.order_processing_time_label if texts is defined else 'Processing Time (min)' }}</label>
                 <input id="order_processing_time" name="order_processing_time" type="number" min="0" step="1" required>
-                <div class="help">Durchschnittliche Bearbeitungszeit</div>
+                <div class="help">{{ texts.order_processing_time_help if texts is defined else 'Average processing time' }}</div>
             </div>
 
             <div>
-                <label for="process_standardization">Process Standardization</label>
+                <label for="process_standardization">{{ texts.process_standardization_label if texts is defined else 'Process Standardization' }}</label>
                 <select id="process_standardization" name="process_standardization" required>
-                    <option value="low">low</option>
-                    <option value="medium">medium</option>
-                    <option value="high">high</option>
-                    <option value="fully standardized">fully standardized</option>
+                    <option value="low">{{ "niedrig" if (lang == "de") else "low" }}</option>
+                    <option value="medium">{{ "mittel" if (lang == "de") else "medium" }}</option>
+                    <option value="high">{{ "hoch" if (lang == "de") else "high" }}</option>
+                    <option value="fully standardized">{{ "vollst. standardisiert" if (lang == "de") else "fully standardized" }}</option>
                 </select>
-                <div class="help">Wie standardisiert sind die Prozesse?</div>
+                <div class="help">{{ texts.process_standardization_help if texts is defined else 'How standardized are the processes?' }}</div>
             </div>
 
             <div>
-                <label for="role_clarity">Role Clarity</label>
+                <label for="role_clarity">{{ texts.role_clarity_label if texts is defined else 'Role Clarity' }}</label>
                 <select id="role_clarity" name="role_clarity" required>
-                    <option value="unclear">unclear</option>
-                    <option value="partial">partial</option>
-                    <option value="clear">clear</option>
-                    <option value="fully defined">fully defined</option>
+                    <option value="unclear">{{ "unklar" if (lang == "de") else "unclear" }}</option>
+                    <option value="partial">{{ "teilweise" if (lang == "de") else "partial" }}</option>
+                    <option value="clear">{{ "klar" if (lang == "de") else "clear" }}</option>
+                    <option value="fully defined">{{ "vollst. definiert" if (lang == "de") else "fully defined" }}</option>
                 </select>
-                <div class="help">Wie klar sind Rollen definiert?</div>
+                <div class="help">{{ texts.role_clarity_help if texts is defined else 'How clearly are roles defined?' }}</div>
             </div>
 
             <div>
-                <label for="ownership_definition">Ownership Definition</label>
+                <label for="ownership_definition">{{ texts.ownership_definition_label if texts is defined else 'Ownership Definition' }}</label>
                 <select id="ownership_definition" name="ownership_definition" required>
-                    <option value="none">none</option>
-                    <option value="informal">informal</option>
-                    <option value="formal">formal</option>
-                    <option value="enforced">enforced</option>
+                    <option value="none">{{ "keine" if (lang == "de") else "none" }}</option>
+                    <option value="informal">{{ "informell" if (lang == "de") else "informal" }}</option>
+                    <option value="formal">{{ "formal" if (lang == "de") else "formal" }}</option>
+                    <option value="enforced">{{ "verankert" if (lang == "de") else "enforced" }}</option>
                 </select>
-                <div class="help">Wie verbindlich ist Ownership geregelt?</div>
+                <div class="help">{{ texts.ownership_definition_help if texts is defined else 'How binding is ownership regulated?' }}</div>
             </div>
 
             <div>
-                <label for="training_coverage">Training Coverage (%)</label>
+                <label for="training_coverage">{{ texts.training_coverage_label if texts is defined else 'Training Coverage (%)' }}</label>
                 <input id="training_coverage" name="training_coverage" type="number" min="0" max="100" step="1" required>
-                <div class="help">Abdeckung von Trainingsmaßnahmen</div>
+                <div class="help">{{ texts.training_coverage_help if texts is defined else 'Coverage of training measures' }}</div>
             </div>
 
             <div>
-                <label for="tool_adoption">Tool Adoption (%)</label>
+                <label for="tool_adoption">{{ texts.tool_adoption_label if texts is defined else 'Tool Adoption (%)' }}</label>
                 <input id="tool_adoption" name="tool_adoption" type="number" min="0" max="100" step="1" required>
-                <div class="help">Nutzung neuer Tools im Alltag</div>
+                <div class="help">{{ texts.tool_adoption_help if texts is defined else 'Usage of new tools in daily work' }}</div>
             </div>
 
             <div>
-                <label for="change_communication">Change Communication</label>
+                <label for="change_communication">{{ texts.change_communication_label if texts is defined else 'Change Communication' }}</label>
                 <select id="change_communication" name="change_communication" required>
-                    <option value="none">none</option>
-                    <option value="irregular">irregular</option>
-                    <option value="structured">structured</option>
-                    <option value="embedded">embedded</option>
+                    <option value="none">{{ "keine" if (lang == "de") else "none" }}</option>
+                    <option value="irregular">{{ "unregelmäßig" if (lang == "de") else "irregular" }}</option>
+                    <option value="structured">{{ "strukturiert" if (lang == "de") else "structured" }}</option>
+                    <option value="embedded">{{ "verankert" if (lang == "de") else "embedded" }}</option>
                 </select>
-                <div class="help">Wie strukturiert wird Veränderung kommuniziert?</div>
+                <div class="help">{{ texts.change_communication_help if texts is defined else 'How structured is change communicated?' }}</div>
             </div>
 
         </div>
 
-        <button type="submit">
-            {{ texts.analyze_button if texts is defined else 'Analyse starten' }}
-        </button>
+        <div style="display: flex; gap: 12px; align-items: center; margin-top: 20px; flex-wrap: wrap;">
+            <button type="submit" style="margin-top: 0;">
+                {{ texts.analyze_button if texts is defined else 'Start Analysis' }}
+            </button>
+            <button type="button" id="fillTestData"
+                    style="margin-top: 0;
+                           background: rgba(255,255,255,0.06);
+                           border: 1px solid rgba(140,165,255,0.22);
+                           box-shadow: none;
+                           color: #c8d5f3;
+                           font-weight: 600;">
+                {{ texts.test_data_button if texts is defined else 'Load Sample Data' }}
+            </button>
+        </div>
     </form>
 </div>
+
+<script>
+document.getElementById("fillTestData").addEventListener("click", function () {
+
+    const isGerman = document.documentElement.lang === "de";
+    const loadedPrefix = isGerman ? "✓ Geladen: " : "✓ Loaded: ";
+    const loadBtnText = isGerman ? "Testdaten laden" : "Load Sample Data";
+
+    const scenariosDE = [
+        {
+            company_id:               "Nordic Express Logistics GmbH",
+            industry:                 "Internationale Logistik",
+            automation_rate:          71,
+            system_availability:      96,
+            error_rate:               7.8,
+            order_processing_time:    16,
+            process_standardization:  "high",
+            role_clarity:             "clear",
+            ownership_definition:     "formal",
+            training_coverage:        42,
+            tool_adoption:            64,
+            change_communication:     "structured",
+        },
+        {
+            company_id:               "Precision Parts Manufacturing AG",
+            industry:                 "Spezialmaschinenbau",
+            automation_rate:          48,
+            system_availability:      94,
+            error_rate:               4.1,
+            order_processing_time:    22,
+            process_standardization:  "high",
+            role_clarity:             "clear",
+            ownership_definition:     "enforced",
+            training_coverage:        58,
+            tool_adoption:            38,
+            change_communication:     "embedded",
+        },
+        {
+            company_id:               "UrbanBox E-Commerce GmbH",
+            industry:                 "Online-Handel",
+            automation_rate:          34,
+            system_availability:      87,
+            error_rate:               12.2,
+            order_processing_time:    38,
+            process_standardization:  "low",
+            role_clarity:             "partial",
+            ownership_definition:     "informal",
+            training_coverage:        24,
+            tool_adoption:            31,
+            change_communication:     "irregular",
+        },
+        {
+            company_id:               "BioSynth Pharmaceutical SE",
+            industry:                 "Pharmazeutische Industrie",
+            automation_rate:          82,
+            system_availability:      99,
+            error_rate:               1.4,
+            order_processing_time:    8,
+            process_standardization:  "fully standardized",
+            role_clarity:             "fully defined",
+            ownership_definition:     "enforced",
+            training_coverage:        89,
+            tool_adoption:            81,
+            change_communication:     "embedded",
+        },
+        {
+            company_id:               "Metro Retail Solutions KG",
+            industry:                 "Einzelhandel",
+            automation_rate:          52,
+            system_availability:      92,
+            error_rate:               6.3,
+            order_processing_time:    24,
+            process_standardization:  "medium",
+            role_clarity:             "clear",
+            ownership_definition:     "formal",
+            training_coverage:        65,
+            tool_adoption:            44,
+            change_communication:     "structured",
+        },
+        {
+            company_id:               "CloudScale Technologies GmbH",
+            industry:                 "Software-as-a-Service",
+            automation_rate:          78,
+            system_availability:      98,
+            error_rate:               2.8,
+            order_processing_time:    12,
+            process_standardization:  "high",
+            role_clarity:             "clear",
+            ownership_definition:     "formal",
+            training_coverage:        72,
+            tool_adoption:            86,
+            change_communication:     "embedded",
+        },
+    ];
+
+    const scenariosEN = [
+        {
+            company_id:               "Nordic Express Logistics GmbH",
+            industry:                 "International Logistics",
+            automation_rate:          71,
+            system_availability:      96,
+            error_rate:               7.8,
+            order_processing_time:    16,
+            process_standardization:  "high",
+            role_clarity:             "clear",
+            ownership_definition:     "formal",
+            training_coverage:        42,
+            tool_adoption:            64,
+            change_communication:     "structured",
+        },
+        {
+            company_id:               "Precision Parts Manufacturing AG",
+            industry:                 "Special Machinery",
+            automation_rate:          48,
+            system_availability:      94,
+            error_rate:               4.1,
+            order_processing_time:    22,
+            process_standardization:  "high",
+            role_clarity:             "clear",
+            ownership_definition:     "enforced",
+            training_coverage:        58,
+            tool_adoption:            38,
+            change_communication:     "embedded",
+        },
+        {
+            company_id:               "UrbanBox E-Commerce GmbH",
+            industry:                 "Online Retail",
+            automation_rate:          34,
+            system_availability:      87,
+            error_rate:               12.2,
+            order_processing_time:    38,
+            process_standardization:  "low",
+            role_clarity:             "partial",
+            ownership_definition:     "informal",
+            training_coverage:        24,
+            tool_adoption:            31,
+            change_communication:     "irregular",
+        },
+        {
+            company_id:               "BioSynth Pharmaceutical SE",
+            industry:                 "Pharmaceutical Industry",
+            automation_rate:          82,
+            system_availability:      99,
+            error_rate:               1.4,
+            order_processing_time:    8,
+            process_standardization:  "fully standardized",
+            role_clarity:             "fully defined",
+            ownership_definition:     "enforced",
+            training_coverage:        89,
+            tool_adoption:            81,
+            change_communication:     "embedded",
+        },
+        {
+            company_id:               "Metro Retail Solutions KG",
+            industry:                 "Retail",
+            automation_rate:          52,
+            system_availability:      92,
+            error_rate:               6.3,
+            order_processing_time:    24,
+            process_standardization:  "medium",
+            role_clarity:             "clear",
+            ownership_definition:     "formal",
+            training_coverage:        65,
+            tool_adoption:            44,
+            change_communication:     "structured",
+        },
+        {
+            company_id:               "CloudScale Technologies GmbH",
+            industry:                 "Software-as-a-Service",
+            automation_rate:          78,
+            system_availability:      98,
+            error_rate:               2.8,
+            order_processing_time:    12,
+            process_standardization:  "high",
+            role_clarity:             "clear",
+            ownership_definition:     "formal",
+            training_coverage:        72,
+            tool_adoption:            86,
+            change_communication:     "embedded",
+        },
+    ];
+
+    const scenarios = isGerman ? scenariosDE : scenariosEN;
+    const s = scenarios[Math.floor(Math.random() * scenarios.length)];
+
+    // Felder befüllen
+    document.getElementById("company_id").value              = s.company_id;
+    document.getElementById("industry").value                = s.industry;
+    document.getElementById("automation_rate").value         = s.automation_rate;
+    document.getElementById("system_availability").value     = s.system_availability;
+    document.getElementById("error_rate").value              = s.error_rate;
+    document.getElementById("order_processing_time").value   = s.order_processing_time;
+    document.getElementById("training_coverage").value       = s.training_coverage;
+    document.getElementById("tool_adoption").value           = s.tool_adoption;
+
+    // Select-Felder
+    setSelect("process_standardization", s.process_standardization);
+    setSelect("role_clarity",            s.role_clarity);
+    setSelect("ownership_definition",    s.ownership_definition);
+    setSelect("change_communication",    s.change_communication);
+
+    // Kurzes visuelles Feedback auf dem Button
+    const btn = document.getElementById("fillTestData");
+    btn.textContent = loadedPrefix + s.company_id;
+    btn.style.borderColor = "rgba(125, 211, 252, 0.45)";
+    btn.style.color = "var(--primary)";
+    setTimeout(() => {
+        btn.textContent = loadBtnText;
+        btn.style.borderColor = "rgba(140,165,255,0.22)";
+        btn.style.color = "#c8d5f3";
+    }, 2500);
+});
+
+function setSelect(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    for (let i = 0; i < el.options.length; i++) {
+        if (el.options[i].value === value) {
+            el.selectedIndex = i;
+            break;
+        }
+    }
+}
+
+const isGerman = document.documentElement.lang === "de";
+
+function renderCustomKPIs() {
+    const container = document.getElementById("customKpiContainer");
+    if (!container) return;
+    
+    const stored = sessionStorage.getItem("customKPIs");
+    if (!stored) {
+        container.style.display = "none";
+        return;
+    }
+    
+    let kpis = [];
+    try {
+        kpis = JSON.parse(stored);
+    } catch (e) {
+        container.style.display = "none";
+        return;
+    }
+    
+    if (kpis.length === 0) {
+        container.style.display = "none";
+        return;
+    }
+    
+    container.style.display = "block";
+    const list = document.getElementById("customKpiList");
+    list.innerHTML = "";
+    
+    kpis.forEach((kpi, index) => {
+        const li = document.createElement("div");
+        li.className = "custom-kpi-item";
+        li.innerHTML = `
+            <span class="custom-kpi-name">${kpi.name}</span>
+            <span class="custom-kpi-dim">${kpi.dimension}</span>
+            <span class="custom-kpi-value">${kpi.value}</span>
+            <button type="button" class="custom-kpi-remove" data-index="${index}">
+                −
+            </button>
+        `;
+        list.appendChild(li);
+    });
+    
+    document.getElementById("clearCustomKpis")?.addEventListener("click", function () {
+        sessionStorage.removeItem("customKPIs");
+        renderCustomKPIs();
+    });
+    
+    document.querySelectorAll(".custom-kpi-remove").forEach(btn => {
+        btn.addEventListener("click", function () {
+            const idx = parseInt(this.dataset.index);
+            kpis.splice(idx, 1);
+            sessionStorage.setItem("customKPIs", JSON.stringify(kpis));
+            renderCustomKPIs();
+        });
+    });
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    // Show loading animation immediately
+    const overlay = document.getElementById("loadingOverlay");
+    if (overlay) {
+        overlay.classList.add("active");
+    }
+    
+    // Hide loading after a short delay
+    setTimeout(function() {
+        if (overlay) {
+            overlay.classList.remove("active");
+        }
+    }, 1500);
+    
+    renderCustomKPIs();
+    
+    if (window.location.search.includes("showKpis=1")) {
+        const url = new URL(window.location);
+        url.searchParams.delete("showKpis");
+        window.history.replaceState({}, "", url);
+    }
+});
+</script>
+
+<!-- Custom KPIs from Custom KPI page -->
+<div id="customKpiContainer" class="card" style="display: none; border: 1px solid rgba(125, 211, 252, 0.2); background: rgba(125, 211, 252, 0.04);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h2 style="margin: 0; font-size: 16px; color: var(--primary);">
+            {{ "Custom KPIs" if (lang == "de") else "Custom KPIs" }}
+        </h2>
+        <button type="button" id="clearCustomKpis"
+                style="background: rgba(239,68,68,0.10); border: 1px solid rgba(239,68,68,0.20);
+                       color: #ff9c9c; padding: 4px 10px; border-radius: 6px;
+                       cursor: pointer; font-size: 12px;">
+            {{ "Alle entfernen" if (lang == "de") else "Clear All" }}
+        </button>
+    </div>
+    <div id="customKpiList"></div>
+</div>
+
+<style>
+.custom-kpi-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+.custom-kpi-name {
+    flex: 1;
+    color: var(--text);
+}
+.custom-kpi-dim {
+    background: rgba(129,140,248,0.15);
+    color: #a5b4fc;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.custom-kpi-value {
+    color: var(--primary);
+    font-weight: 600;
+    min-width: 50px;
+    text-align: right;
+}
+.custom-kpi-remove {
+    background: rgba(239,68,68,0.12);
+    border: 1px solid rgba(239,68,68,0.25);
+    color: #ff9c9c;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.custom-kpi-remove:hover {
+    background: rgba(239,68,68,0.25);
+}
+</style>
 
 {% if result %}
 
@@ -146,45 +530,53 @@
     <div class="result-header-grid">
 
         <div class="result-header-main">
-            <div class="hero-badge" style="margin-bottom: 10px;">Assessment Result</div>
-            <h2 style="font-size: 24px; margin-bottom: 4px;">
-                {% if assessment is defined and assessment.company_id %}
+            <div class="hero-badge" style="margin-bottom: 10px;">
+                {{ "Analyseergebnis" if (lang == "de") else "Analysis Result" }}
+            </div>
+            <h2 style="font-size: 26px; margin-bottom: 6px;">
+                {% if assessment is defined and assessment.company_id and assessment.company_id != "Demo Company" %}
                     {{ assessment.company_id }}
                 {% elif assessment is defined and assessment.domain %}
                     {{ assessment.domain }}
                 {% else %}
-                    System Analysis
+                    {{ "Systemanalyse" if (lang == "de") else "System Analysis" }}
                 {% endif %}
             </h2>
-            {% if assessment is defined and assessment.industry %}
-            <p style="color: #8fa1c2; font-size: 14px; margin: 0;">{{ assessment.industry }}</p>
+            {% if assessment is defined and assessment.industry and assessment.industry.strip() %}
+            <div class="industry-badge">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                {{ assessment.industry }}
+            </div>
             {% endif %}
         </div>
 
         <div class="result-kpi-row">
             <div class="result-kpi">
-                <div class="result-kpi-label">Overall Readiness</div>
+                <div class="result-kpi-label">{{ "Gesamtbereitschaft" if (lang == "de") else "Overall Readiness" }}</div>
                 <div class="result-kpi-value">{{ "%.1f"|format(result.overall_readiness) }}<span style="font-size:16px; font-weight:400; color:#8fa1c2;"> / 3</span></div>
             </div>
             <div class="result-kpi">
-                <div class="result-kpi-label">Transition</div>
+                <div class="result-kpi-label">{{ "Übergang" if (lang == "de") else "Transition" }}</div>
                 <div class="result-kpi-value">
                     {% if result.transition_feasible %}
-                        <span class="status status-green">Möglich</span>
+                        <span class="status status-green">{{ "Möglich" if (lang == "de") else "Feasible" }}</span>
                     {% else %}
-                        <span class="status status-red">Nicht möglich</span>
+                        <span class="status status-red">{{ "Nicht möglich" if (lang == "de") else "Not Feasible" }}</span>
                     {% endif %}
                 </div>
             </div>
             <div class="result-kpi">
-                <div class="result-kpi-label">Risk Level</div>
+                <div class="result-kpi-label">{{ "Risikostufe" if (lang == "de") else "Risk Level" }}</div>
                 <div class="result-kpi-value">
                     {% if result.transition_risk == "low" %}
-                        <span class="status status-green">Low</span>
+                        <span class="status status-green">{{ "Niedrig" if (lang == "de") else "Low" }}</span>
                     {% elif result.transition_risk == "medium" %}
-                        <span class="status status-yellow">Medium</span>
+                        <span class="status status-yellow">{{ "Mittel" if (lang == "de") else "Medium" }}</span>
                     {% else %}
-                        <span class="status status-red">High</span>
+                        <span class="status status-red">{{ "Hoch" if (lang == "de") else "High" }}</span>
                     {% endif %}
                 </div>
             </div>
@@ -193,11 +585,29 @@
     </div>
 </div>
 
+<style>
+.industry-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(125, 211, 252, 0.10);
+    border: 1px solid rgba(125, 211, 252, 0.20);
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 4px;
+}
+</style>
+
 <!-- ── Dimension Scores ───────────────────────────────────── -->
 <div class="card">
-    <h2>Dimension Scores</h2>
+    <h2>{{ "Dimensions-Scores" if (lang == "de") else "Dimension Scores" }}</h2>
     <div class="grid">
-        {% set dims = [("T", "Technology"), ("P", "Process"), ("R", "Responsibility"), ("A", "Acceptance")] %}
+        {% set dims_de = [("T", "Technologie"), ("P", "Prozess"), ("R", "Verantwortung"), ("A", "Akzeptanz")] %}
+        {% set dims_en = [("T", "Technology"), ("P", "Process"), ("R", "Responsibility"), ("A", "Acceptance")] %}
+        {% set dims = dims_de if (lang == "de") else dims_en %}
         {% for key, label in dims %}
         <div class="metric-card">
             <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.06em;
@@ -227,8 +637,10 @@
 <!-- ── Bottlenecks ────────────────────────────────────────── -->
 {% if result.bottlenecks %}
 <div class="card">
-    <h2>Strukturelle Engpässe</h2>
-    {% set dim_labels = {"T": "Technology", "P": "Process", "R": "Responsibility", "A": "Acceptance"} %}
+    <h2>{{ "Strukturelle Engpässe" if (lang == "de") else "Structural Bottlenecks" }}</h2>
+    {% set dim_labels_de = {"T": "Technologie", "P": "Prozess", "R": "Verantwortung", "A": "Akzeptanz"} %}
+    {% set dim_labels_en = {"T": "Technology", "P": "Process", "R": "Responsibility", "A": "Acceptance"} %}
+    {% set dim_labels = dim_labels_de if (lang == "de") else dim_labels_en %}
     <div style="display: flex; flex-direction: column; gap: 12px;">
         {% for dim, detail in result.bottleneck_details.items() %}
         <div class="metric-card" style="border-left: 3px solid var(--danger); border-radius: 0 16px 16px 0;">
@@ -253,7 +665,7 @@
 {% if summary %}
 <div class="card">
     <h2 class="section-title">
-        Gesamteinschätzung
+        {{ "Gesamteinschätzung" if (lang == "de") else "Overall Assessment" }}
         <span class="ai-badge">AI</span>
     </h2>
     <div class="summary-box">{{ summary }}</div>
@@ -263,12 +675,12 @@
 <!-- ── AI Explanation (altes Format) ─────────────────────── -->
 {% if explanation %}
 <div class="card">
-    <h2 class="section-title">AI Explanation <span class="ai-badge">AI</span></h2>
+    <h2 class="section-title">{{ "KI-Erklärung" if (lang == "de") else "AI Explanation" }} <span class="ai-badge">AI</span></h2>
     <div style="display: flex; flex-direction: column; gap: 16px;">
 
         {% if explanation.diagnosis %}
         <div class="metric-card">
-            <h3 style="color: #ff9c9c; margin-bottom: 10px;">Diagnosis</h3>
+            <h3 style="color: #ff9c9c; margin-bottom: 10px;">{{ "Diagnose" if (lang == "de") else "Diagnosis" }}</h3>
             <ul>
                 {% for item in explanation.diagnosis %}
                 <li>{{ item }}</li>
@@ -279,7 +691,7 @@
 
         {% if explanation.operational_impact %}
         <div class="metric-card">
-            <h3 style="color: #ffe17a; margin-bottom: 10px;">Operational Impact</h3>
+            <h3 style="color: #ffe17a; margin-bottom: 10px;">{{ "Operative Auswirkungen" if (lang == "de") else "Operational Impact" }}</h3>
             <ul>
                 {% for item in explanation.operational_impact %}
                 <li>{{ item }}</li>
@@ -290,7 +702,7 @@
 
         {% if explanation.capacity_gap %}
         <div class="metric-card">
-            <h3 style="color: #7dd3fc; margin-bottom: 10px;">Capacity Gap</h3>
+            <h3 style="color: #7dd3fc; margin-bottom: 10px;">{{ "Kapazitätslücke" if (lang == "de") else "Capacity Gap" }}</h3>
             <ul>
                 {% for item in explanation.capacity_gap %}
                 <li>{{ item }}</li>
@@ -306,7 +718,7 @@
 <!-- ── Top Priorities ─────────────────────────────────────── -->
 {% if priorities %}
 <div class="card">
-    <h2 class="section-title">Top-Prioritäten <span class="ai-badge">AI</span></h2>
+    <h2 class="section-title">{{ "Top-Prioritäten" if (lang == "de") else "Top Priorities" }} <span class="ai-badge">AI</span></h2>
     <div style="display: flex; flex-direction: column; gap: 12px;">
         {% for p in priorities %}
         <div class="metric-card" style="display: flex; gap: 16px; align-items: flex-start;">
@@ -318,8 +730,8 @@
             </div>
             <div style="flex: 1;">
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
-                    {% if p.dimension is defined %}
-                    <span class="status status-green" style="font-size: 11px;">{{ p.dimension }}</span>
+                    {% if p.dimension_label is defined %}
+                    <span class="status status-green" style="font-size: 11px;">{{ p.dimension_label }}</span>
                     {% endif %}
                     {% if p.timeframe %}
                     <span style="font-size: 12px; color: #8fa1c2;">{{ p.timeframe }}</span>
@@ -337,17 +749,17 @@
 <!-- ── Handlungsrahmen ────────────────────────────────────── -->
 {% if lever or risk or next_step %}
 <div class="card">
-    <h2 class="section-title">Handlungsrahmen <span class="ai-badge">AI</span></h2>
+    <h2 class="section-title">{{ "Handlungsrahmen" if (lang == "de") else "Action Framework" }} <span class="ai-badge">AI</span></h2>
     <div style="display: flex; flex-direction: column; gap: 12px;">
 
         {% if lever %}
         <div class="metric-card">
             <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
                         text-transform: uppercase; color: var(--primary); margin-bottom: 6px;">
-                Größter Hebel
+                {{ "Größter Hebel" if (lang == "de") else "Main Lever" }}
             </div>
             <h3 style="margin-bottom: 6px;">
-                {% if lever.dimension is defined %}{{ lever.dimension }} – {% endif %}
+                {% if lever.dimension_label is defined %}{{ lever.dimension_label }} – {% endif %}
                 {{ lever.explanation[:60] }}{% if lever.explanation|length > 60 %}...{% endif %}
             </h3>
             <p style="margin: 0; font-size: 13px;">{{ lever.explanation }}</p>
@@ -358,13 +770,13 @@
         <div class="metric-card">
             <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
                         text-transform: uppercase; color: #ff9c9c; margin-bottom: 6px;">
-                Risiko bei Untätigkeit –
+                {{ "Risiko bei Untätigkeit" if (lang == "de") else "Risk of Inaction" }} –
                 {% if risk.level == "high" %}
-                    <span class="status status-red" style="font-size: 11px;">High</span>
+                    <span class="status status-red" style="font-size: 11px;">{{ "Hoch" if (lang == "de") else "High" }}</span>
                 {% elif risk.level == "medium" %}
-                    <span class="status status-yellow" style="font-size: 11px;">Medium</span>
+                    <span class="status status-yellow" style="font-size: 11px;">{{ "Mittel" if (lang == "de") else "Medium" }}</span>
                 {% else %}
-                    <span class="status status-green" style="font-size: 11px;">Low</span>
+                    <span class="status status-green" style="font-size: 11px;">{{ "Niedrig" if (lang == "de") else "Low" }}</span>
                 {% endif %}
             </div>
             <p style="margin: 0; font-size: 13px;">{{ risk.consequence }}</p>
@@ -375,15 +787,15 @@
         <div class="metric-card" style="border-left: 3px solid var(--primary); border-radius: 0 16px 16px 0;">
             <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
                         text-transform: uppercase; color: var(--primary); margin-bottom: 6px;">
-                Nächster konkreter Schritt
+                {{ "Nächster konkreter Schritt" if (lang == "de") else "Next Concrete Step" }}
             </div>
             <p style="margin: 0 0 6px; font-size: 14px; color: var(--text); font-weight: 500;">
                 {{ next_step.action }}
             </p>
             {% if next_step.owner %}
             <p style="margin: 0; font-size: 12px; color: #8fa1c2;">
-                Verantwortlich: {{ next_step.owner }}
-                {% if next_step.by_when %} · Bis: {{ next_step.by_when }}{% endif %}
+                {{ "Verantwortlich:" if (lang == "de") else "Owner:" }} {{ next_step.owner }}
+                {% if next_step.by_when %} · {{ "Bis:" if (lang == "de") else "By:" }} {{ next_step.by_when }}{% endif %}
             </p>
             {% endif %}
         </div>
@@ -396,7 +808,7 @@
 <!-- ── RAG Quellen ────────────────────────────────────────── -->
 {% if references %}
 <div class="card">
-    <h2>Genutzte Quellen</h2>
+    <h2>{{ "Genutzte Quellen" if (lang == "de") else "Sources Used" }}</h2>
     <ul>
         {% for ref in references %}
         <li style="font-size: 13px; color: #8fa1c2;">{{ ref }}</li>
@@ -407,9 +819,9 @@
 
 <!-- ── Mini Chat ──────────────────────────────────────────── -->
 <div class="card">
-    <h2 class="section-title">AI Chat <span class="ai-badge">Session</span></h2>
+    <h2 class="section-title">{{ "KI-Chat" if (lang == "de") else "AI Chat" }} <span class="ai-badge">{{ "Sitzung" if (lang == "de") else "Session" }}</span></h2>
     <p style="font-size: 14px; color: #8fa1c2; margin-bottom: 16px;">
-        Ask follow-up questions. The system retains context within this session.
+        {{ "Stelle Folgefragen. Das System behält den Kontext innerhalb dieser Sitzung." if (lang == "de") else "Ask follow-up questions. The system retains context within this session." }}
     </p>
 
     <div id="chatHistoryMini" style="margin-bottom: 16px;">
@@ -429,7 +841,7 @@
             </div>
             {% endfor %}
         {% else %}
-            <p style="opacity: 0.5; font-size: 14px;">No messages yet.</p>
+            <p style="opacity: 0.5; font-size: 14px;">{{ "Noch keine Nachrichten." if (lang == "de") else "No messages yet." }}</p>
         {% endif %}
     </div>
 
@@ -439,15 +851,15 @@
                          border: 1px solid rgba(255,255,255,0.10);
                          background: rgba(255,255,255,0.05); color: white;
                          font-size: 14px; font-family: inherit; resize: vertical;"
-                  placeholder="Ask something about the system..."
+                  placeholder="{{ "Stelle eine Frage zum System..." if (lang == "de") else "Ask something about the system..." }}"
                   required></textarea>
         <div style="display: flex; gap: 10px; margin-top: 12px;">
-            <button type="submit" style="margin-top: 0;">Send</button>
+            <button type="submit" style="margin-top: 0;">{{ "Senden" if (lang == "de") else "Send" }}</button>
             <button type="button" id="clearMiniChat"
                     style="margin-top: 0; background: rgba(239,68,68,0.12);
                            box-shadow: none; border: 1px solid rgba(239,68,68,0.2);
                            color: #ff9c9c;">
-                Clear
+                {{ "Löschen" if (lang == "de") else "Clear" }}
             </button>
         </div>
     </form>
@@ -457,49 +869,61 @@
 
 <!-- ── Scripts ────────────────────────────────────────────── -->
 <script>
-const form    = document.getElementById("assessmentForm");
-const overlay = document.getElementById("loadingOverlay");
-if (form && overlay) {
-    form.addEventListener("submit", () => overlay.classList.add("active"));
-}
-</script>
+document.addEventListener("DOMContentLoaded", function() {
+    const form    = document.getElementById("assessmentForm");
+    const overlay = document.getElementById("loadingOverlay");
+    
+    if (form && overlay) {
+        form.addEventListener("submit", function(e) {
+            // Show loading overlay immediately with inline styles
+            overlay.style.display = "flex";
+            document.body.classList.add("loading-active");
+            document.body.style.overflow = "hidden";
+        });
+    }
+    
+    const chatMiniForm  = document.getElementById("chatMiniForm");
+    const chatMiniInput = document.getElementById("chatMiniInput");
+    const clearMiniChat = document.getElementById("clearMiniChat");
+    
+    if (chatMiniForm && overlay) {
+        chatMiniForm.addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const message = chatMiniInput.value.trim();
+            if (!message) return;
 
-<script>
-const chatMiniForm  = document.getElementById("chatMiniForm");
-const chatMiniInput = document.getElementById("chatMiniInput");
-const clearMiniChat = document.getElementById("clearMiniChat");
+            overlay.style.display = "flex";
+            document.body.classList.add("loading-active");
+            document.body.style.overflow = "hidden";
 
-if (chatMiniForm) {
-    chatMiniForm.addEventListener("submit", async function (e) {
-        e.preventDefault();
-        const message = chatMiniInput.value.trim();
-        if (!message) return;
-
-        if (overlay) overlay.classList.add("active");
-
-        try {
-            const response = await fetch("/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message })
-            });
-            if (response.ok) {
-                window.location.reload();
-            } else {
-                if (overlay) overlay.classList.remove("active");
+            try {
+                const response = await fetch("/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message })
+                });
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    overlay.style.display = "none";
+                    document.body.classList.remove("loading-active");
+                    document.body.style.overflow = "";
+                }
+            } catch {
+                overlay.style.display = "none";
+                document.body.classList.remove("loading-active");
+                document.body.style.overflow = "";
             }
-        } catch {
-            if (overlay) overlay.classList.remove("active");
-        }
-    });
-}
+        });
+    }
 
-if (clearMiniChat) {
-    clearMiniChat.addEventListener("click", async function () {
-        const response = await fetch("/chat/clear", { method: "POST" });
-        if (response.ok) window.location.reload();
-    });
-}
+    if (clearMiniChat) {
+        clearMiniChat.addEventListener("click", async function () {
+            const response = await fetch("/chat/clear", { method: "POST" });
+            if (response.ok) window.location.reload();
+        });
+    }
+});
 </script>
 
 {% endblock %}

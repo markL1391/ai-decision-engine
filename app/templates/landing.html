@@ -4,6 +4,22 @@
 
 {% block content %}
 
+<!-- Loading Overlay -->
+<div id="loadingOverlay" style="display:none; position:fixed; inset:0; width:100vw; height:100vh; background:url('/static/images/network-bg.png') center center / cover no-repeat, radial-gradient(ellipse at center, rgba(15,23,42,0.7) 0%, rgba(2,6,23,0.85) 100%); backdrop-filter:blur(4px); align-items:center; justify-content:center; flex-direction:column; z-index:99999;">
+    <div class="loading-network">
+        <div class="node node-1"></div>
+        <div class="node node-2"></div>
+        <div class="node node-3"></div>
+        <div class="node node-center"></div>
+    </div>
+    <div class="loading-box">
+        <div class="loading-title">{{ "KI deckt verborgene Systembeschränkungen auf" if (lang == "de") else "AI is revealing hidden system constraints" }}</div>
+        <div class="loading-subtitle">
+            {{ "Signale werden verknüpft, Abhängigkeiten analysiert und in operative Erkenntnisse übersetzt." if (lang == "de") else "Connecting signals, mapping dependencies, and translating them into operational insight." }}
+        </div>
+    </div>
+</div>
+
 {% set t_page = {
 
     "hero_badge": "Erklärbare KI für operative Systeme" if lang == "de" else "Explainable AI for operational systems",
@@ -68,9 +84,7 @@
 <div class="card hero-card">
     <div class="hero-badge">{{ t_page.hero_badge }}</div>
 
-    <h1>{{ t_page.hero_title }}</h1>
-
-    <p class="hero-tagline">{{ t_page.hero_tagline }}</p>
+    <p class="hero-tagline" style="margin-top: 12px;">{{ t_page.hero_tagline }}</p>
 
     <p class="hero-description">{{ t_page.hero_desc }}</p>
 
@@ -155,5 +169,22 @@
         </a>
     </div>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Show loading animation immediately
+    const overlay = document.getElementById("loadingOverlay");
+    if (overlay) {
+        overlay.style.display = "flex";
+    }
+    
+    // Hide loading after a short delay
+    setTimeout(function() {
+        if (overlay) {
+            overlay.style.display = "none";
+        }
+    }, 1500);
+});
+</script>
 
 {% endblock %}

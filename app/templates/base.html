@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/png">
     <title>{% block title %}Explainable Engine{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -16,7 +17,7 @@
     "benchmark": "Benchmark" if lang == "de" else "Benchmark",
     "custom_kpi": "Custom KPI" if lang == "de" else "Custom KPI",
     "ai_mapping": "KI-Mapping" if lang == "de" else "AI Mapping",
-    "temperature": "Temperatur" if lang == "de" else "Temperature",
+    "temperature": "LLM-Analyse" if lang == "de" else "LLM Analysis",
     "landing": "Startseite" if lang == "de" else "Landing"
 } %}
 
@@ -72,26 +73,73 @@
 
         <!-- Language Switch -->
         <div class="sidebar-lang">
-            <a href="{{ request.path }}?lang=de"
-               class="{% if lang == 'de' %}active{% endif %}">
+            <button onclick="switchLanguage('de')" class="{% if lang == 'de' %}active{% endif %}" style="background:none;border:none;cursor:pointer;padding:8px;font-size:18px;">
                 🇩🇪
-            </a>
-            <a href="{{ request.path }}?lang=en"
-               class="{% if lang == 'en' %}active{% endif %}">
+            </button>
+            <button onclick="switchLanguage('en')" class="{% if lang == 'en' %}active{% endif %}" style="background:none;border:none;cursor:pointer;padding:8px;font-size:18px;">
                 🇬🇧
-            </a>
+            </button>
         </div>
 
     </aside>
+
+    <script>
+    function switchLanguage(lang) {
+        var url = new URL(window.location.href);
+        url.searchParams.set('lang', lang);
+        // Remove any form-related params
+        url.searchParams.delete('_csrf_token');
+        // Ensure we go to a GET endpoint by extracting just the path
+        var basePath = url.pathname;
+        var newUrl = basePath + '?lang=' + lang;
+        window.location.href = newUrl;
+    }
+    </script>
 
     <!-- Main -->
     <main class="main-content">
         <div class="container">
             {% block content %}{% endblock %}
+            
+            <!-- AXION Footer Branding -->
+            <div class="axion-footer">
+                <span class="axion-brand">AXION</span>
+                <span class="axion-separator">|</span>
+                <span class="axion-tagline">{{ "from data to structure" if (lang == "de") else "from data to structure" }}</span>
+            </div>
         </div>
     </main>
 
 </div>
+
+<style>
+.axion-footer {
+    text-align: center;
+    padding: 32px 0 16px;
+    margin-top: 24px;
+    border-top: 1px solid rgba(140, 165, 255, 0.08);
+}
+.axion-brand {
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    background: linear-gradient(90deg, #7dd3fc, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.axion-separator {
+    margin: 0 12px;
+    opacity: 0.4;
+    color: #8fa1c2;
+}
+.axion-tagline {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: #8fa1c2;
+}
+</style>
 
 </body>
 </html>

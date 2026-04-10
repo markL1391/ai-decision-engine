@@ -60,11 +60,22 @@ from core.ai_mapping import suggest_dimension_for_kpi
 api_bp = Blueprint("api", __name__)
 
 DIMENSION_DISPLAY = {
-    "T": "Technology",
-    "P": "Process",
-    "R": "Responsibility",
-    "A": "Adoption",
+    "de": {
+        "T": "Technologie",
+        "P": "Prozess",
+        "R": "Verantwortung",
+        "A": "Akzeptanz",
+    },
+    "en": {
+        "T": "Technology",
+        "P": "Process",
+        "R": "Responsibility",
+        "A": "Adoption",
+    }
 }
+
+def get_dimension_display(lang, key):
+    return DIMENSION_DISPLAY.get(lang, DIMENSION_DISPLAY["en"]).get(key, key)
 
 TEXTS = {
     "de": {
@@ -87,6 +98,33 @@ TEXTS = {
         "mode_5_label": "Modus 5",
         "mode_5_title": "AI Mapping Helper",
         "mode_5_text": "Lass das System für neue KPI-Namen eine erste strukturelle Zuordnung vorschlagen.",
+        "input_metrics_title": "Eingabe Kennzahlen",
+        "company_label": "Unternehmen",
+        "company_placeholder": "z.B. Nordic Express GmbH",
+        "industry_label": "Branche",
+        "industry_placeholder": "z.B. Logistik, Produktion, E-Commerce",
+        "industry_help": "Optional – verbessert die KI-Empfehlung",
+        "automation_rate_label": "Automatisierungsgrad (%)",
+        "automation_rate_help": "Anteil automatisierter Abläufe",
+        "system_availability_label": "Systemverfügbarkeit (%)",
+        "system_availability_help": "Systemverfügbarkeit im Betrieb",
+        "error_rate_label": "Fehlerquote (%)",
+        "error_rate_help": "Fehlerquote im Prozess",
+        "order_processing_time_label": "Bearbeitungszeit (min)",
+        "order_processing_time_help": "Durchschnittliche Bearbeitungszeit",
+        "process_standardization_label": "Prozessstandardisierung",
+        "process_standardization_help": "Wie standardisiert sind die Prozesse?",
+        "role_clarity_label": "Rollenklarheit",
+        "role_clarity_help": "Wie klar sind Rollen definiert?",
+        "ownership_definition_label": "Verantwortungsdefinition",
+        "ownership_definition_help": "Wie verbindlich ist Ownership geregelt?",
+        "training_coverage_label": "Schulungsabdeckung (%)",
+        "training_coverage_help": "Abdeckung von Trainingsmaßnahmen",
+        "tool_adoption_label": "Tool-Nutzung (%)",
+        "tool_adoption_help": "Nutzung neuer Tools im Alltag",
+        "change_communication_label": "Change-Kommunikation",
+        "change_communication_help": "Wie strukturiert wird Veränderung kommuniziert?",
+        "test_data_button": "Testdaten laden",
         "analyze_button": "Analyse starten",
         "language_switch_de": "DE",
         "language_switch_en": "EN",
@@ -111,7 +149,34 @@ TEXTS = {
         "mode_5_label": "Mode 5",
         "mode_5_title": "AI mapping helper",
         "mode_5_text": "Let the system suggest an initial structural mapping for new KPI names.",
-        "analyze_button": "Start analysis",
+        "input_metrics_title": "Input Metrics",
+        "company_label": "Company",
+        "company_placeholder": "e.g. Nordic Express GmbH",
+        "industry_label": "Industry",
+        "industry_placeholder": "e.g. Logistics, Manufacturing, E-Commerce",
+        "industry_help": "Optional – improves AI recommendations",
+        "automation_rate_label": "Automation Rate (%)",
+        "automation_rate_help": "Share of automated processes",
+        "system_availability_label": "System Availability (%)",
+        "system_availability_help": "System uptime in operation",
+        "error_rate_label": "Error Rate (%)",
+        "error_rate_help": "Error rate in the process",
+        "order_processing_time_label": "Processing Time (min)",
+        "order_processing_time_help": "Average processing time",
+        "process_standardization_label": "Process Standardization",
+        "process_standardization_help": "How standardized are the processes?",
+        "role_clarity_label": "Role Clarity",
+        "role_clarity_help": "How clearly are roles defined?",
+        "ownership_definition_label": "Ownership Definition",
+        "ownership_definition_help": "How binding is ownership regulated?",
+        "training_coverage_label": "Training Coverage (%)",
+        "training_coverage_help": "Coverage of training measures",
+        "tool_adoption_label": "Tool Adoption (%)",
+        "tool_adoption_help": "Usage of new tools in daily work",
+        "change_communication_label": "Change Communication",
+        "change_communication_help": "How structured is change communicated?",
+        "test_data_button": "Load Sample Data",
+        "analyze_button": "Start Analysis",
         "language_switch_de": "DE",
         "language_switch_en": "EN",
     }
@@ -137,6 +202,103 @@ def _error_response(message: str, status_code: int, details: Any = None):
     if details is not None:
         payload["details"] = details
     return jsonify(payload), status_code
+
+
+def _translate_to_german(text: str, api_key: str) -> str:
+    """
+    Translate English text to German using OpenAI.
+
+    Args:
+        text: English text to translate.
+        api_key: OpenAI API key.
+
+    Returns:
+        German translation of the text.
+    """
+    if not text or not text.strip():
+        return text
+
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key)
+
+        response = client.responses.create(
+            model="gpt-4o-mini",
+            input=[{
+                "role": "user",
+                "content": f"Translate the following text to German. Keep the tone professional and consistent with business/consulting language. Do not add explanations, only the translation.\n\nText:\n{text}"
+            }],
+        )
+
+        return response.output_text.strip()
+    except Exception:
+        return text
+
+
+def _translate_structured_output(output: Dict[str, Any], api_key: str) -> Dict[str, Any]:
+    """
+    Translate a structured advisory output from English to German.
+
+    Args:
+        output: Dictionary with summary, priorities, lever, risk, next_step, etc.
+        api_key: OpenAI API key.
+
+    Returns:
+        Translated dictionary.
+    """
+    translated = {}
+
+    if output.get("summary"):
+        translated["summary"] = _translate_to_german(output["summary"], api_key)
+    else:
+        translated["summary"] = output.get("summary", "")
+
+    if output.get("top_priorities"):
+        translated_priorities = []
+        for p in output["top_priorities"]:
+            tp = dict(p)
+            if p.get("action"):
+                tp["action"] = _translate_to_german(p["action"], api_key)
+            if p.get("rationale"):
+                tp["rationale"] = _translate_to_german(p["rationale"], api_key)
+            if p.get("timeframe"):
+                tp["timeframe"] = _translate_to_german(p["timeframe"], api_key)
+            translated_priorities.append(tp)
+        translated["top_priorities"] = translated_priorities
+    else:
+        translated["top_priorities"] = output.get("top_priorities", [])
+
+    if output.get("lever"):
+        tl = dict(output["lever"])
+        if tl.get("explanation"):
+            tl["explanation"] = _translate_to_german(tl["explanation"], api_key)
+        translated["lever"] = tl
+    else:
+        translated["lever"] = output.get("lever", {})
+
+    if output.get("risk"):
+        tr = dict(output["risk"])
+        if tr.get("consequence"):
+            tr["consequence"] = _translate_to_german(tr["consequence"], api_key)
+        translated["risk"] = tr
+    else:
+        translated["risk"] = output.get("risk", {})
+
+    if output.get("next_step"):
+        tns = dict(output["next_step"])
+        if tns.get("action"):
+            tns["action"] = _translate_to_german(tns["action"], api_key)
+        if tns.get("owner"):
+            tns["owner"] = _translate_to_german(tns["owner"], api_key)
+        if tns.get("by_when"):
+            tns["by_when"] = _translate_to_german(tns["by_when"], api_key)
+        translated["next_step"] = tns
+    else:
+        translated["next_step"] = output.get("next_step", {})
+
+    translated["rag_references"] = output.get("rag_references", [])
+
+    return translated
 
 
 def _build_demo_metrics(form_data) -> List[SimpleNamespace]:
@@ -166,13 +328,20 @@ def _build_demo_metrics(form_data) -> List[SimpleNamespace]:
     ]
 
 
-def _build_comparison_payload(result_a: Dict[str, Any], result_b: Dict[str, Any]) -> Dict[str, Any]:
+def _build_comparison_payload(
+    result_a: Dict[str, Any], 
+    result_b: Dict[str, Any],
+    company_name: str = "",
+    industry: str = ""
+) -> Dict[str, Any]:
     """
     Build a comparison dictionary from two deterministic assessment results.
 
     Args:
         result_a: Deterministic result of assessment A.
         result_b: Deterministic result of assessment B.
+        company_name: Optional company name for context.
+        industry: Optional industry for branch-specific recommendations.
 
     Returns:
         Dictionary containing score deltas and feasibility comparison.
@@ -187,6 +356,8 @@ def _build_comparison_payload(result_a: Dict[str, Any], result_b: Dict[str, Any]
     critical_gap_value = round(t_delta - a_delta, 2)
 
     return {
+        "company_name": company_name or "the company",
+        "industry": industry or "",
         "r_delta": round(result_b["dimension_scores"].get("R", 0) - result_a["dimension_scores"].get("R", 0), 2),
         "p_delta": round(result_b["dimension_scores"].get("P", 0) - result_a["dimension_scores"].get("P", 0), 2),
         "t_delta": round(result_b["dimension_scores"].get("T", 0) - result_a["dimension_scores"].get("T", 0), 2),
@@ -212,6 +383,8 @@ def _build_comparison_from_db(a: Assessment, b: Assessment) -> Dict[str, Any]:
         Dictionary containing deltas and feasibility comparison.
     """
     return {
+        "company_name": a.metrics.company_id if hasattr(a.metrics, 'company_id') else "Company",
+        "industry": a.metrics.industry if hasattr(a.metrics, 'industry') else "",
         "r_delta": round(b.result.r_score - a.result.r_score, 2),
         "p_delta": round(b.result.p_score - a.result.p_score, 2),
         "t_delta": round(b.result.t_score - a.result.t_score, 2),
@@ -501,6 +674,7 @@ def _build_demo_metrics_with_prefix(form_data, prefix: str) -> List[SimpleNamesp
         SimpleNamespace(name="tool_adoption", value=float(form_data.get(f"{prefix}tool_adoption"))),
         SimpleNamespace(name="change_communication", value=form_data.get(f"{prefix}change_communication")),
     ]
+
 def _get_language() -> str:
     """
     Get the UI language from the query parameter.
@@ -642,6 +816,7 @@ def demo():
                 api_key=api_key,
                 engine_result=result,
                 retrieved_context=retrieved_context,
+                industry=assessment.industry or "",
             )
 
             structured = parse_llm_output(json.dumps({
@@ -653,19 +828,31 @@ def demo():
                 "rag_references": raw_output["rag_references"],
             }))
 
-            summary = structured.summary
+            raw_structured = {
+                "summary": structured.summary,
+                "top_priorities": [p.model_dump() for p in structured.top_priorities],
+                "lever": structured.lever.model_dump(),
+                "risk": structured.risk.model_dump(),
+                "next_step": structured.next_step.model_dump(),
+                "rag_references": raw_output.get("rag_references", []),
+            }
+
+            if lang == "de":
+                raw_structured = _translate_structured_output(raw_structured, api_key)
+
+            summary = raw_structured["summary"]
 
             priorities = []
-            for p in structured.top_priorities:
-                item = p.model_dump()
-                item["dimension_label"] = DIMENSION_DISPLAY.get(item["dimension"], item["dimension"])
+            for p in raw_structured["top_priorities"]:
+                item = dict(p)
+                item["dimension_label"] = get_dimension_display(lang, item["dimension"])
                 priorities.append(item)
 
-            lever = structured.lever.model_dump()
-            lever["dimension_label"] = DIMENSION_DISPLAY.get(lever["dimension"], lever["dimension"])
+            lever = dict(raw_structured["lever"])
+            lever["dimension_label"] = get_dimension_display(lang, lever["dimension"])
 
-            risk = structured.risk.model_dump()
-            next_step = structured.next_step.model_dump()
+            risk = dict(raw_structured["risk"])
+            next_step = dict(raw_structured["next_step"])
 
             references = _derive_reference_labels(retrieved_context)
 
@@ -706,6 +893,9 @@ def compare_demo():
     4. Optionally generate AI comparison explanation
     5. Render compare demo template
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     lang = _get_language()
     texts = TEXTS[lang]
     template_context = {
@@ -719,35 +909,68 @@ def compare_demo():
     }
 
     if request.method == "GET":
-        return render_template("compare_demo.html", **template_context)
+        logger.info("Compare demo GET request")
+        return render_template("compare_demo.html", lang=lang, texts=texts, **template_context)
 
     try:
+        logger.info("Compare demo POST request received")
+        logger.info(f"Form fields: {list(request.form.keys())}")
+        
         metrics_a = _build_demo_metrics_with_prefix(request.form, "a_")
         metrics_b = _build_demo_metrics_with_prefix(request.form, "b_")
+        logger.info(f"Metrics A: {[m.name for m in metrics_a]}")
+        logger.info(f"Metrics B: {[m.name for m in metrics_b]}")
 
         mapped_a = map_metrics_to_indicators(metrics_a)
         mapped_b = map_metrics_to_indicators(metrics_b)
+        logger.info(f"Mapped A: {mapped_a}")
+        logger.info(f"Mapped B: {mapped_b}")
 
         result_a = run_deterministic_engine(mapped_a, target_level=2)
         result_b = run_deterministic_engine(mapped_b, target_level=2)
+        logger.info(f"Result A: {result_a.get('dimension_scores')}")
+        logger.info(f"Result B: {result_b.get('dimension_scores')}")
 
-        comparison = _build_comparison_payload(result_a, result_b)
+        comparison = _build_comparison_payload(
+            result_a, 
+            result_b,
+            company_name=request.form.get("a_company_id", "Scenario A"),
+            industry=request.form.get("a_industry", "")
+        )
+        logger.info(f"Comparison built: t_delta={comparison.get('t_delta')}, p_delta={comparison.get('p_delta')}")
 
         compare_explanation = None
         api_key = os.getenv("OPENAI_API_KEY")
 
         if api_key:
             try:
+                logger.info("Generating AI comparison explanation...")
                 compare_explanation = generate_compare_explanation_openai(
                     api_key=api_key,
                     comparison=comparison,
                 )
+                logger.info("AI explanation generated successfully")
+
+                if lang == "de" and compare_explanation:
+                    if compare_explanation.get("summary"):
+                        compare_explanation["summary"] = _translate_to_german(compare_explanation["summary"], api_key)
+                    if compare_explanation.get("main_improvements"):
+                        compare_explanation["main_improvements"] = [
+                            _translate_to_german(item, api_key) for item in compare_explanation["main_improvements"]
+                        ]
+                    if compare_explanation.get("transition_impact"):
+                        compare_explanation["transition_impact"] = [
+                            _translate_to_german(item, api_key) for item in compare_explanation["transition_impact"]
+                        ]
             except Exception as e:
+                logger.error(f"AI explanation failed: {e}")
                 compare_explanation = {
                     "summary": "The comparison explanation could not be generated.",
                     "main_improvements": [str(e)],
                     "transition_impact": [],
                 }
+        else:
+            logger.warning("OPENAI_API_KEY not configured, skipping AI explanation")
 
         scenario_a = SimpleNamespace(
             company_id=request.form.get("a_company_id", "Scenario A"),
@@ -769,6 +992,7 @@ def compare_demo():
                 "compare_explanation": compare_explanation,
             }
         )
+        logger.info("Rendering template with comparison data")
 
         return render_template(
             "compare_demo.html",
@@ -779,8 +1003,9 @@ def compare_demo():
 
 
     except Exception as e:
+        logger.error(f"Compare demo exception: {e}", exc_info=True)
         template_context["error"] = f"Compare demo failed: {e}"
-        return render_template("compare_demo.html", **template_context)
+        return render_template("compare_demo.html", lang=lang, texts=texts, **template_context)
 
 # =============================================================================
 # API routes
@@ -933,11 +1158,11 @@ def generate_explanation():
         priority_items = []
         for p in structured.top_priorities:
             item = p.model_dump()
-            item["dimension_label"] = DIMENSION_DISPLAY.get(item["dimension"], item["dimension"])
+            item["dimension_label"] = get_dimension_display("en", item["dimension"])
             priority_items.append(item)
 
         lever_item = structured.lever.model_dump()
-        lever_item["dimension_label"] = DIMENSION_DISPLAY.get(lever_item["dimension"], lever_item["dimension"])
+        lever_item["dimension_label"] = get_dimension_display("en", lever_item["dimension"])
 
         explanation_payload = {
             "summary": structured.summary,
@@ -1214,7 +1439,7 @@ def custom_kpi_demo():
     lang = _get_language()
     texts = TEXTS[lang]
     if request.method == "GET":
-        return render_template("custom_kpi_demo.html")
+        return render_template("custom_kpi_demo.html", lang=lang, texts=texts)
 
     try:
         custom_kpis = []
@@ -1255,6 +1480,8 @@ def custom_kpi_demo():
         return render_template(
             "custom_kpi_demo.html",
             error=f"Custom KPI demo failed: {e}",
+            lang=lang,
+            texts=texts,
         )
 
 @api_bp.route("/ai-mapping-demo", methods=["GET", "POST"])
@@ -1269,7 +1496,14 @@ def ai_mapping_demo():
     if request.method == "POST":
         kpi_name = request.form.get("kpi_name", "")
         if kpi_name.strip():
-            suggestion = suggest_dimension_for_kpi(kpi_name)
+            suggestion = suggest_dimension_for_kpi(kpi_name, language=lang)
+            
+            if suggestion and "dimension_label" not in suggestion:
+                labels = {
+                    "de": {"T": "Technologie", "P": "Prozess", "R": "Verantwortung", "A": "Akzeptanz"},
+                    "en": {"T": "Technology", "P": "Process", "R": "Responsibility", "A": "Acceptance"},
+                }
+                suggestion["dimension_label"] = labels.get(lang, labels["en"]).get(suggestion.get("dimension", "P"), "Prozess")
 
     return render_template(
         "ai_mapping_demo.html",
@@ -1388,6 +1622,141 @@ Latest summary:
 {last_summary}
 """.strip()
 
+    technology_hints = {
+        "logistik": """
+BRANCHEN-SPEZIFISCHE TECHNOLOGIE-EMPFEHLUNGEN (Logistik):
+- Warehouse Management Systeme (WMS): SAP EWM, Manhattan Associates, Blue Yonder
+- Transport Management Systeme (TMS): project44, Blue Yonder TMS, Transporeon
+- Automatisierung: AMR (Autonomous Mobile Robots), Pick-by-Voice, RFID-Tracking
+- Analyse: Real-Time-Tracking-Dashboards, Predictive-ETA-Engines
+- Kommunikation: Fahrer-Apps mit einfacher UI (象大, TMW Systems)
+- Schulung vor Automation: Mitarbeiter schulen BEVOR neue Systeme ausgerollt werden
+""",
+        "logistics": """
+INDUSTRY-SPECIFIC TECHNOLOGY RECOMMENDATIONS (Logistics):
+- Warehouse Management Systems (WMS): SAP EWM, Manhattan Associates, Blue Yonder
+- Transport Management Systems (TMS): project44, Blue Yonder TMS, Transporeon
+- Automation: AMR (Autonomous Mobile Robots), Pick-by-Voice, RFID tracking
+- Analytics: Real-time tracking dashboards, predictive ETA engines
+- Communication: Driver apps with simple UI
+- Train BEFORE automation: Train employees BEFORE rolling out new systems
+""",
+        "produktion": """
+BRANCHEN-SPEZIFISCHE TECHNOLOGIE-EMPFEHLUNGEN (Produktion):
+- MES (Manufacturing Execution System): Siemens Opcenter, Rockwell FactoryTalk, SAP ME
+- ERP-Integration: SAP S/4HANA Manufacturing, Oracle Cloud MES
+- Qualitätssicherung: SPC-Software (Minitab, QI Macros), CAQ-Systeme
+- Automatisierung: PLC-Programmierung, SCADA-Systeme, Cobots
+- Wartung: Predictive Maintenance (Siemens MindSphere, PTC ThingWorx)
+- WICHTIG: Erst Prozesse standardisieren (Lean), DANN automatisieren
+""",
+        "manufacturing": """
+INDUSTRY-SPECIFIC TECHNOLOGY RECOMMENDATIONS (Manufacturing):
+- MES (Manufacturing Execution System): Siemens Opcenter, Rockwell FactoryTalk, SAP ME
+- ERP Integration: SAP S/4HANA Manufacturing, Oracle Cloud MES
+- Quality Assurance: SPC software (Minitab, QI Macros), CAQ systems
+- Automation: PLC programming, SCADA systems, Cobots
+- Maintenance: Predictive Maintenance (Siemens MindSphere, PTC ThingWorx)
+- IMPORTANT: Standardize processes (Lean) FIRST, THEN automate
+""",
+        "e-commerce": """
+BRANCHEN-SPEZIFISCHE TECHNOLOGIE-EMPFEHLUNGEN (E-Commerce):
+- Shop-Systeme: Shopify Plus, Magento (Adobe Commerce), Shopware
+- ERP/PIM: SAP Commerce Cloud, Akeneo PIM, Clerk.io
+- WMS: Bringg, Square Kiala, Packiyo
+- Analytics: Google Analytics 4, Mixpanel, Heap
+- Marketing: Klaviyo (E-Mail), Attentive (SMS), Attribrid
+- Skalierbarkeit: Cloud-Infrastruktur (AWS, GCP) mit Auto-Scaling
+""",
+        "ecommerce": """
+INDUSTRY-SPECIFIC TECHNOLOGY RECOMMENDATIONS (E-Commerce):
+- Shop Systems: Shopify Plus, Magento (Adobe Commerce), Shopware
+- ERP/PIM: SAP Commerce Cloud, Akeneo PIM
+- WMS: Bringg, Packiyo
+- Analytics: Google Analytics 4, Mixpanel, Heap
+- Scalability: Cloud infrastructure (AWS, GCP) with auto-scaling
+""",
+        "pharma": """
+BRANCHEN-SPEZIFISCHE TECHNOLOGIE-EMPFEHLUNGEN (Pharma):
+- LIMS (Laboratory Information): STARLIMS, LabWare, LabVantage
+- MES: Siemens Opcenter, Rockwell PharmaSuite, Werum PAS-X
+- Serialisierung: TraceLink, Adents Proverb, SAP OEE für Track & Trace
+- QMS (Quality Management): MasterControl, Veeva Vault QMS, Sparta Systems
+- ERP: SAP S/4HANA (mit GxP-Modul), Oracle
+- Compliance: Validierungsdokumentation, CSV (Computer System Validation)
+- WICHTIG: Änderungen müssen validiert und dokumentiert sein (GMP)
+""",
+        "pharmaceutical": """
+INDUSTRY-SPECIFIC TECHNOLOGY RECOMMENDATIONS (Pharma):
+- LIMS: STARLIMS, LabWare, LabVantage
+- MES: Siemens Opcenter, Rockwell PharmaSuite, Werum PAS-X
+- Serialization: TraceLink, Adents Proverb
+- QMS: MasterControl, Veeva Vault QMS, Sparta Systems
+- ERP: SAP S/4HANA (with GxP module), Oracle
+- Compliance: Validation documentation, CSV (Computer System Validation)
+- IMPORTANT: Changes must be validated and documented (GMP)
+""",
+        "retail": """
+BRANCHEN-SPEZIFISCHE TECHNOLOGIE-EMPFEHLUNGEN (Einzelhandel):
+- POS-Systeme: Lightspeed POS, Square for Retail, Shopify POS
+- Omnichannel: Shopify POS, Lightspeed Omnichannel, Salesfloor
+- Warenwirtschaft: JTL-Wawi, SAP Retail, Oracle Xstore
+- Kundenbindung: Yardo, Loyverse, Smile.io
+- Analytics: Sensormatic (Footfall), Quanthub, Power BI Dashboards
+- WICHTIG: Erst Mitarbeiter schulen, DANN neues Kassensystem ausrollen
+- Change-Kommunikation: Filialleiter-Briefing vor Systemwechsel
+""",
+        "handel": """
+BRANCHEN-SPEZIFISCHE TECHNOLOGIE-EMPFEHLUNGEN (Handel):
+- POS-Systeme: Lightspeed POS, Square for Retail
+- Omnichannel: Shopify POS, Lightspeed Omnichannel
+- Inventory: JTL-Wawi, SAP Retail
+- Customer loyalty: Yardo, Smile.io
+- WICHTIG: Erst schulen, DANN Kassensystem ausrollen
+""",
+        "einzelhandel": """
+BRANCHEN-SPEZIFISCHE TECHNOLOGIE-EMPFEHLUNGEN (Einzelhandel):
+- POS-Systeme: Lightspeed POS, Square for Retail, Shopify POS
+- Omnichannel: Shopify POS, Lightspeed Omnichannel
+- Warenwirtschaft: JTL-Wawi, SAP Retail
+- WICHTIG: Erst schulen, DANN System ausrollen
+""",
+        "saas": """
+BRANCHEN-SPEZIFISCHE TECHNOLOGIE-EMPFEHLUNGEN (SaaS):
+- APM (Application Performance): Datadog, New Relic, Dynatrace
+- Error Tracking: Sentry, Bugsnag
+- Feature Flags: LaunchDarkly, Unleash, Statsig
+- CI/CD: GitHub Actions, GitLab CI, CircleCI
+- Monitoring: PagerDuty, Grafana, Prometheus
+- Onboarding: Appcues, WalkMe, Intercom Product Tours
+- API-Management: Postman, Swagger, Kong
+""",
+        "tech": """
+INDUSTRY-SPECIFIC TECHNOLOGY RECOMMENDATIONS (Tech):
+- APM: Datadog, New Relic, Dynatrace
+- Error Tracking: Sentry, Bugsnag
+- Feature Flags: LaunchDarkly, Unleash
+- CI/CD: GitHub Actions, GitLab CI
+- Monitoring: PagerDuty, Grafana
+- Onboarding: Appcues, WalkMe
+- API Management: Postman, Swagger, Kong
+""",
+        "software": """
+INDUSTRY-SPECIFIC TECHNOLOGY RECOMMENDATIONS (Software):
+- APM: Datadog, New Relic, Dynatrace
+- Feature Flags: LaunchDarkly, Unleash
+- CI/CD: GitHub Actions, GitLab CI
+- Onboarding: Appcues, WalkMe, Intercom
+""",
+    }
+
+    industry_hint = ""
+    industry_lower = industry.lower().strip() if industry else ""
+    for key, hint in technology_hints.items():
+        if key in industry_lower:
+            industry_hint = hint
+            break
+
     prompt = f"""
 You are the built-in analyst of an Explainable Decision Engine.
 
@@ -1404,6 +1773,7 @@ Your role:
 - if the user asks "what is my strongest bottleneck", answer directly from the scores and bottlenecks
 - if the user asks "what should I fix first", answer using the weakest dimensions and required capacities
 - if the user asks about risks, explain them in relation to the current result
+- if the user asks about technologies to introduce, use the industry-specific technology list below to give CONCRETE, NAMED recommendations
 - if the user asks something unrelated to the analysis, answer briefly and redirect to the available system context
 
 Style:
@@ -1415,7 +1785,10 @@ Style:
 - do not invent missing data
 
 {system_context}
-
+{f"""
+Industry-specific technology recommendations:
+{industry_hint}
+""" if industry_hint else ""}
 Conversation history:
 {history_block}
 
@@ -1437,7 +1810,9 @@ Current user message:
                         "You are a product-embedded analyst for an explainable operational decision engine. "
                         "You must answer based on the supplied analysis result. "
                         "Never default to generic business advice when the system context already contains the answer. "
-                        "Be specific, grounded, and concise."
+                        "Be specific, grounded, and concise. "
+                        "IMPORTANT: Do NOT use markdown formatting. Write in plain text without **bold**, *italic*, or any other markdown syntax. "
+                        "Use plain paragraphs and bullet points with hyphens (-)."
                     ),
                 },
                 {
@@ -1448,6 +1823,10 @@ Current user message:
         )
 
         assistant_message = response.output_text.strip()
+
+        lang = _get_language()
+        if lang == "de":
+            assistant_message = _translate_to_german(assistant_message, api_key)
 
     except Exception as e:
         return _error_response("Chat generation failed", 500, str(e))
@@ -1497,6 +1876,9 @@ def temperature_demo():
     assessments = Assessment.query.all()
     lang = _get_language()
 
+    if not assessments and session.get("engine_result"):
+        assessments = ["session"]
+
     return render_template(
         "temperature_demo.html",
         assessments=assessments,
@@ -1542,28 +1924,35 @@ def compare_temperature():
     if not (0 <= temperature_a <= 2) or not (0 <= temperature_b <= 2):
         return jsonify({"error": "temperature values must be between 0 and 2"}), 400
 
-    assessment = Assessment.query.get(assessment_id)
-    if not assessment:
-        return jsonify({"error": "Assessment not found"}), 404
-
-    if not assessment.metrics:
-        return jsonify({"error": "Assessment has no metrics"}), 404
+    engine_result = None
+    assessment_context = {}
+    
+    if str(assessment_id) == "session":
+        engine_result = session.get("engine_result")
+        assessment_context = session.get("assessment_context", {})
+        if not engine_result:
+            return jsonify({"error": "No analysis in current session. Please run an analysis first."}), 400
+    else:
+        assessment = Assessment.query.get(assessment_id)
+        if not assessment:
+            return jsonify({"error": "Assessment not found"}), 404
+        if not assessment.metrics:
+            return jsonify({"error": "Assessment has no metrics"}), 404
+        
+        mapped_indicators = map_metrics_to_indicators(assessment.metrics)
+        engine_result = run_deterministic_engine(mapped_indicators, assessment.target_level)
+        assessment_context = {
+            "company_id": assessment.domain or assessment.company_id or "Assessment",
+            "industry": assessment.industry or "",
+        }
 
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         return jsonify({"error": "OPENAI_API_KEY is not configured"}), 500
 
     try:
-        # Rebuild deterministic result from stored metrics
-        mapped_indicators = map_metrics_to_indicators(assessment.metrics)
-        engine_result = run_deterministic_engine(
-            mapped_indicators,
-            assessment.target_level,
-        )
-
         retrieved_context = retrieve_context(engine_result)
 
-        # Generate both outputs
         comparison_result = generate_temperature_comparison_openai(
             api_key=api_key,
             engine_result=engine_result,
@@ -1573,16 +1962,21 @@ def compare_temperature():
         )
 
         return jsonify({
-            "assessment_id": assessment.id,
+            "assessment_id": str(assessment_id),
+            "assessment_name": assessment_context.get("company_id", "Session Analysis"),
+            "industry": assessment_context.get("industry", ""),
             "temperature_a": temperature_a,
             "temperature_b": temperature_b,
             "engine_result": {
+                "dimension_scores": engine_result.get("dimension_scores", {}),
                 "bottlenecks": engine_result["bottlenecks"],
+                "overall_readiness": engine_result.get("overall_readiness", 0),
                 "transition_feasible": engine_result["transition_feasible"],
                 "transition_risk": engine_result["transition_risk"],
             },
             "output_a": comparison_result["output_a"],
             "output_b": comparison_result["output_b"],
+            "ai_summary": comparison_result.get("ai_summary", ""),
             "model_name": comparison_result["model_name"],
             "prompt_version": comparison_result["prompt_version"],
         }), 200
@@ -1590,5 +1984,128 @@ def compare_temperature():
     except Exception as e:
         return jsonify({
             "error": "Temperature comparison failed",
+            "details": str(e),
+        }), 500
+
+
+@api_bp.route("/explanations/analyze-company", methods=["POST"])
+def analyze_company():
+    """
+    Analyze a company using structured AI recommendations with temperature comparison.
+    
+    Expected JSON body:
+    {
+        "company_id": "Company Name",
+        "industry": "Industry",
+        "automation_rate": 70,
+        "system_availability": 95,
+        "error_rate": 5.0,
+        "order_processing_time": 15,
+        "process_standardization": "high",
+        "role_clarity": "clear",
+        "ownership_definition": "formal",
+        "training_coverage": 60,
+        "tool_adoption": 50,
+        "change_communication": "structured",
+        "temperature_a": 0.2,
+        "temperature_b": 0.8
+    }
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    data = request.get_json(silent=True)
+    if not data:
+        logger.error("Invalid or missing JSON body")
+        return jsonify({"error": "Invalid or missing JSON body"}), 400
+
+    logger.info(f"Analyze company request: {data.get('company_id', 'Unknown')}")
+    
+    lang = _get_language()
+    temperature_a = float(data.get("temperature_a", 0.2))
+    temperature_b = float(data.get("temperature_b", 0.8))
+    logger.info(f"Temperatures: A={temperature_a}, B={temperature_b}")
+
+    try:
+        metrics = [
+            SimpleNamespace(name="automation_rate", value=float(data.get("automation_rate", 0))),
+            SimpleNamespace(name="system_availability", value=float(data.get("system_availability", 0))),
+            SimpleNamespace(name="error_rate", value=float(data.get("error_rate", 0))),
+            SimpleNamespace(name="order_processing_time", value=float(data.get("order_processing_time", 0))),
+            SimpleNamespace(name="process_standardization", value=data.get("process_standardization", "medium")),
+            SimpleNamespace(name="role_clarity", value=data.get("role_clarity", "partial")),
+            SimpleNamespace(name="ownership_definition", value=data.get("ownership_definition", "informal")),
+            SimpleNamespace(name="training_coverage", value=float(data.get("training_coverage", 0))),
+            SimpleNamespace(name="tool_adoption", value=float(data.get("tool_adoption", 0))),
+            SimpleNamespace(name="change_communication", value=data.get("change_communication", "irregular")),
+        ]
+
+        mapped_indicators = map_metrics_to_indicators(metrics)
+        logger.info(f"Mapped indicators: {mapped_indicators}")
+
+        engine_result = run_deterministic_engine(mapped_indicators, target_level=2)
+        logger.info(f"Engine result dimension_scores: {engine_result.get('dimension_scores')}")
+
+        result = {
+            "engine_result": engine_result,
+            "temperature_a": temperature_a,
+            "temperature_b": temperature_b,
+            "priorities": [],
+            "lever": None,
+            "next_step": None,
+            "summary_a": None,
+            "summary_b": None,
+        }
+
+        api_key = os.getenv("OPENAI_API_KEY")
+        if api_key:
+            try:
+                logger.info("Generating AI explanations with two temperatures...")
+                retrieved_context = retrieve_context(engine_result)
+
+                raw_output_a = generate_explanation_openai(
+                    api_key=api_key,
+                    engine_result=engine_result,
+                    retrieved_context=retrieved_context,
+                    industry=data.get("industry", ""),
+                    temperature=temperature_a,
+                )
+                logger.info(f"Output A generated: summary length={len(raw_output_a.get('summary', ''))}")
+
+                raw_output_b = generate_explanation_openai(
+                    api_key=api_key,
+                    engine_result=engine_result,
+                    retrieved_context=retrieved_context,
+                    industry=data.get("industry", ""),
+                    temperature=temperature_b,
+                )
+                logger.info(f"Output B generated: summary length={len(raw_output_b.get('summary', ''))}")
+
+                if lang == "de":
+                    raw_output_a = _translate_structured_output(raw_output_a, api_key)
+                    raw_output_b = _translate_structured_output(raw_output_b, api_key)
+
+                result["summary_a"] = raw_output_a.get("summary", "")
+                result["summary_b"] = raw_output_b.get("summary", "")
+
+                result["priorities"] = raw_output_a.get("top_priorities", [])
+                result["lever"] = raw_output_a.get("lever", {})
+                result["next_step"] = raw_output_a.get("next_step", {})
+                logger.info("AI explanations processed successfully")
+
+            except Exception as e:
+                logger.error(f"AI analysis failed: {e}", exc_info=True)
+                result["summary_a"] = f"AI analysis failed: {str(e)}"
+                result["summary_b"] = ""
+        else:
+            logger.warning("OPENAI_API_KEY not configured, returning engine result only")
+
+        logger.info(f"Returning result with engine_result keys: {list(result['engine_result'].keys())}")
+        return jsonify(result), 200
+
+    except Exception as e:
+        logger.error(f"Company analysis failed: {e}", exc_info=True)
+        return jsonify({
+            "error": "Company analysis failed",
             "details": str(e),
         }), 500
