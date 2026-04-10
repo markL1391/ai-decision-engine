@@ -81,7 +81,6 @@
         <div class="node node-1"></div>
         <div class="node node-2"></div>
         <div class="node node-3"></div>
-        <div class="node node-center"></div>
     </div>
     <div class="loading-box">
         <div class="loading-title">{{ "KI deckt verborgene Systembeschränkungen auf" if (lang == "de") else "AI is revealing hidden system constraints" }}</div>
@@ -381,20 +380,8 @@ window.addEventListener("error", function(e) {
 });
 
 document.addEventListener("DOMContentLoaded", function() {
-    // Show loading animation immediately
-    const overlay = document.getElementById("loadingOverlay");
-    if (overlay) {
-        overlay.style.display = "flex";
-    }
-    
-    // Hide loading after a short delay
-    setTimeout(function() {
-        if (overlay) {
-            overlay.style.display = "none";
-        }
-    }, 1500);
-    
     const compareForm = document.getElementById("compareForm");
+    const overlay = document.getElementById("loadingOverlay");
     const isGerman = document.documentElement.lang === "de" || document.documentElement.getAttribute("lang") === "de";
 
 const scenarios = {
@@ -472,31 +459,33 @@ document.querySelectorAll(".fill-test-btn").forEach(btn => {
             this.style.color = "";
         }, 2000);
     });
-    
-    if (compareForm && overlay) {
-        compareForm.addEventListener("submit", function (e) {
-            console.log("Compare form submitting...");
-            overlay.style.display = "flex";
-            document.body.style.overflow = "hidden";
-            
-            const formData = new FormData(compareForm);
-            const data = {};
-            for (const [key, value] of formData.entries()) {
-                data[key] = value;
+});
+
+if (compareForm && overlay) {
+    compareForm.addEventListener("submit", function (e) {
+        console.log("Compare form submitting...");
+        overlay.style.display = "flex";
+        document.body.classList.add("loading-active");
+        document.body.style.overflow = "hidden";
+        
+        const formData = new FormData(compareForm);
+        const data = {};
+        for (const [key, value] of formData.entries()) {
+            data[key] = value;
+        }
+        console.log("Form data being submitted:", Object.keys(data).length, "fields");
+        
+        setTimeout(function() {
+            if (overlay.style.display === "flex") {
+                console.log("Timeout: hiding overlay (form may have failed)");
+                overlay.style.display = "none";
+                document.body.classList.remove("loading-active");
+                document.body.style.overflow = "";
+                alert("Form submission timed out. Please try again.");
             }
-            console.log("Form data being submitted:", Object.keys(data).length, "fields");
-            
-            // Fallback: if page doesn't reload within 60 seconds, hide overlay and show error
-            setTimeout(function() {
-                if (overlay.style.display === "flex") {
-                    console.log("Timeout: hiding overlay (form may have failed)");
-                    overlay.style.display = "none";
-                    document.body.style.overflow = "";
-                    alert("Form submission timed out. Please try again.");
-                }
-            }, 60000);
-        });
-    }
+        }, 60000);
+    });
+}
 });
 </script>
 

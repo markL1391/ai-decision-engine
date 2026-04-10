@@ -10,7 +10,6 @@
         <div class="node node-1"></div>
         <div class="node node-2"></div>
         <div class="node node-3"></div>
-        <div class="node node-center"></div>
     </div>
     <div class="loading-box">
         <div class="loading-title">{{ "KI deckt verborgene Systembeschränkungen auf" if (lang == "de") else "AI is revealing hidden system constraints" }}</div>
@@ -435,19 +434,6 @@ function renderCustomKPIs() {
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-    // Show loading animation immediately
-    const overlay = document.getElementById("loadingOverlay");
-    if (overlay) {
-        overlay.classList.add("active");
-    }
-    
-    // Hide loading after a short delay
-    setTimeout(function() {
-        if (overlay) {
-            overlay.classList.remove("active");
-        }
-    }, 1500);
-    
     renderCustomKPIs();
     
     if (window.location.search.includes("showKpis=1")) {
@@ -633,6 +619,27 @@ document.addEventListener("DOMContentLoaded", function() {
         {% endfor %}
     </div>
 </div>
+
+<!-- ── Custom KPIs ────────────────────────────────────────── -->
+{% if custom_kpis %}
+<div class="card">
+    <h2>{{ "Eigene KPIs" if (lang == "de") else "Custom KPIs" }}</h2>
+    <div class="grid">
+        {% for kpi in custom_kpis %}
+        <div class="metric-card" style="border-left: 3px solid var(--primary);">
+            <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8fa1c2; margin-bottom: 6px;">
+                {{ kpi.dimension }}
+            </div>
+            <div style="font-weight: 600; color: var(--text); margin-bottom: 4px;">{{ kpi.name }}</div>
+            <div style="font-size: 13px; color: var(--primary);">{{ kpi.value }}</div>
+            <div style="font-size: 11px; color: #8fa1c2; margin-top: 4px;">
+                {{ "Höher ist besser" if kpi.direction == "higher_better" else "Niedriger ist besser" if (lang == "de") else "Higher is better" if kpi.direction == "higher_better" else "Lower is better" }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
 <!-- ── Bottlenecks ────────────────────────────────────────── -->
 {% if result.bottlenecks %}
@@ -875,10 +882,26 @@ document.addEventListener("DOMContentLoaded", function() {
     
     if (form && overlay) {
         form.addEventListener("submit", function(e) {
+            e.preventDefault();
+            
+            // Add custom KPIs from sessionStorage to form
+            const customKPIs = sessionStorage.getItem("customKPIs");
+            if (customKPIs) {
+                let input = document.createElement("input");
+                input.type = "hidden";
+                input.name = "custom_kpis_json";
+                input.value = customKPIs;
+                form.appendChild(input);
+            }
+            
             // Show loading overlay immediately with inline styles
             overlay.style.display = "flex";
             document.body.classList.add("loading-active");
             document.body.style.overflow = "hidden";
+            // Submit form after showing overlay
+            setTimeout(function() {
+                form.submit();
+            }, 100);
         });
     }
     

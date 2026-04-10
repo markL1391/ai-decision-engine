@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}" type="image/png">
-    <title>{% block title %}Explainable Engine{% endblock %}</title>
+    <meta name="theme-color" content="#0f172a">
+    <meta name="description" content="AI Explainable Decision Engine - Transform raw metrics into structural insights">
+    <title>{% block title %}AXION - Explainable Decision Engine{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -81,6 +83,11 @@
             </button>
         </div>
 
+        <!-- Brand Footer -->
+        <div class="axion-footer">
+            <div class="axion-footer-brand">AXION</div>
+        </div>
+
     </aside>
 
     <script>
@@ -138,6 +145,19 @@
     font-size: 12px;
     letter-spacing: 0.08em;
     color: #8fa1c2;
+}
+.axion-footer {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid rgba(140, 165, 255, 0.08);
+    text-align: center;
+}
+.axion-footer-brand {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    color: rgba(125, 211, 252, 0.5);
+    text-transform: uppercase;
 }
 </style>
 

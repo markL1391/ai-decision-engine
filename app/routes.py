@@ -769,6 +769,20 @@ def demo():
     texts = TEXTS[lang]
     metrics = _build_demo_metrics(request.form)
     mapped_indicators = map_metrics_to_indicators(metrics)
+    
+    # Add custom KPIs if provided
+    custom_kpis = None
+    custom_kpis_json = request.form.get("custom_kpis_json")
+    if custom_kpis_json:
+        try:
+            import json
+            custom_kpis = json.loads(custom_kpis_json)
+            if custom_kpis and len(custom_kpis) > 0:
+                custom_indicators = map_custom_kpis_to_indicators(custom_kpis)
+                mapped_indicators.extend(custom_indicators)
+        except Exception:
+            custom_kpis = None
+    
     result = run_deterministic_engine(mapped_indicators, target_level=2)
     indicator_view = mapped_indicators
 
@@ -873,6 +887,7 @@ def demo():
         references=references,
         input_metrics=input_metrics,
         indicator_view=indicator_view,
+        custom_kpis=custom_kpis,
         lang=lang,
         texts=texts,
     )
@@ -1492,11 +1507,12 @@ def ai_mapping_demo():
     lang = _get_language()
     texts = TEXTS[lang]
     suggestion = None
+    kpi_name_value = ""
 
     if request.method == "POST":
-        kpi_name = request.form.get("kpi_name", "")
-        if kpi_name.strip():
-            suggestion = suggest_dimension_for_kpi(kpi_name, language=lang)
+        kpi_name_value = request.form.get("kpi_name", "")
+        if kpi_name_value.strip():
+            suggestion = suggest_dimension_for_kpi(kpi_name_value, language=lang)
             
             if suggestion and "dimension_label" not in suggestion:
                 labels = {
@@ -1508,6 +1524,7 @@ def ai_mapping_demo():
     return render_template(
         "ai_mapping_demo.html",
         suggestion=suggestion,
+        kpi_name_value=kpi_name_value,
         lang=lang,
         texts=texts,
     )

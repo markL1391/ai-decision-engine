@@ -51,7 +51,6 @@
         <div class="node node-1"></div>
         <div class="node node-2"></div>
         <div class="node node-3"></div>
-        <div class="node node-center"></div>
     </div>
     <div class="loading-box">
         <div class="loading-title">{{ "KI deckt verborgene Systembeschränkungen auf" if (lang == "de") else "AI is revealing hidden system constraints" }}</div>
@@ -128,19 +127,275 @@
                        font-weight: 600;">
             {{ "Beispieldaten laden" if (lang == "de") else "Load Sample Data" }}
         </button>
+        <button type="button" id="transferToAnalysis"
+                style="margin-top: 0; margin-left: 12px;
+                       background: rgba(125, 211, 252, 0.12);
+                       border: 1px solid rgba(125, 211, 252, 0.25);
+                       color: var(--primary);
+                       font-weight: 600;">
+            {{ "Zur Analyse übertragen →" if (lang == "de") else "Transfer to Analysis →" }}
+        </button>
     </form>
 </div>
 
+<!-- KPI Preview -->
+<div id="kpiPreview" class="card" style="display: none;">
+    <h2>{{ "Eingegebene KPIs" if (lang == "de") else "Entered KPIs" }}</h2>
+    <div id="kpiPreviewList" class="grid"></div>
+</div>
+
+<style>
+.kpi-preview-item {
+    padding: 12px;
+    background: rgba(125, 211, 252, 0.05);
+    border: 1px solid rgba(125, 211, 252, 0.15);
+    border-radius: 10px;
+}
+.kpi-preview-name {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+.kpi-preview-meta {
+    font-size: 12px;
+    color: var(--text-soft);
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.kpi-preview-dim {
+    background: rgba(129,140,248,0.15);
+    color: #a5b4fc;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+</style>
+
 <script>
+// Large pool of sample KPIs (~100)
+const allSampleKPIs = {
+    de: [
+        // Technology (T)
+        { name: "System-Verfügbarkeit (%)", value: 99.5, direction: "higher_better", dimension: "T", thresholds: [99.9, 99.0, 98.0] },
+        { name: "API-Antwortzeit (ms)", value: 120, direction: "lower_better", dimension: "T", thresholds: [50, 200, 500] },
+        { name: "Automatisierungsgrad (%)", value: 72, direction: "higher_better", dimension: "T", thresholds: [80, 60, 40] },
+        { name: "Server-Ausfallzeit (Min/Monat)", value: 15, direction: "lower_better", dimension: "T", thresholds: [5, 30, 120] },
+        { name: "Backup-Erfolgsrate (%)", value: 99.2, direction: "higher_better", dimension: "T", thresholds: [100, 99, 95] },
+        { name: "Netzwerk-Latenz (ms)", value: 25, direction: "lower_better", dimension: "T", thresholds: [10, 50, 100] },
+        { name: "Software-Updates pro Quartal", value: 4, direction: "higher_better", dimension: "T", thresholds: [6, 4, 2] },
+        { name: "IT-Sicherheitsvorfälle pro Jahr", value: 2, direction: "lower_better", dimension: "T", thresholds: [0, 5, 15] },
+        { name: "Cloud-Migrationsfortschritt (%)", value: 65, direction: "higher_better", dimension: "T", thresholds: [80, 50, 25] },
+        { name: "Tech-Schulden-Tage", value: 45, direction: "lower_better", dimension: "T", thresholds: [10, 30, 90] },
+        { name: "Datenbank-Performance (Queries/sec)", value: 5000, direction: "higher_better", dimension: "T", thresholds: [8000, 3000, 1000] },
+        { name: "Cybersicherheits-Score", value: 85, direction: "higher_better", dimension: "T", thresholds: [90, 70, 50] },
+        { name: "Infrastruktur-Kosten pro User ($)", value: 45, direction: "lower_better", dimension: "T", thresholds: [20, 50, 100] },
+        { name: "Systemintegrationsgrad (%)", value: 78, direction: "higher_better", dimension: "T", thresholds: [90, 70, 50] },
+        { name: "Recovery Time Objective (Min)", value: 30, direction: "lower_better", dimension: "T", thresholds: [15, 60, 240] },
+        { name: "Testabdeckung (%)", value: 82, direction: "higher_better", dimension: "T", thresholds: [90, 70, 50] },
+        { name: "Deployment-Häufigkeit (pro Woche)", value: 5, direction: "higher_better", dimension: "T", thresholds: [7, 3, 1] },
+        { name: "Technische Dokumentation (%)", value: 70, direction: "higher_better", dimension: "T", thresholds: [90, 60, 30] },
+        { name: "API-Nutzung (Aufrufe/Tag)", value: 50000, direction: "higher_better", dimension: "T", thresholds: [100000, 20000, 5000] },
+        { name: "System-Alter (Jahre)", value: 3, direction: "lower_better", dimension: "T", thresholds: [2, 5, 10] },
+        { name: "Load-Balance-Effizienz (%)", value: 92, direction: "higher_better", dimension: "T", thresholds: [98, 85, 70] },
+        { name: "Datenbackup-Frequenz (Stunden)", value: 4, direction: "lower_better", dimension: "T", thresholds: [1, 6, 24] },
+        { name: "Virtualisierungsgrad (%)", value: 88, direction: "higher_better", dimension: "T", thresholds: [95, 75, 50] },
+        { name: "Monitoring-Coverage (%)", value: 95, direction: "higher_better", dimension: "T", thresholds: [100, 80, 60] },
+        { name: "SSL-Zertifikat-Gültigkeit (Tage)", value: 180, direction: "higher_better", dimension: "T", thresholds: [365, 90, 30] },
+        // Process (P)
+        { name: "Prozess-Durchlaufzeit (Tage)", value: 5, direction: "lower_better", dimension: "P", thresholds: [2, 7, 14] },
+        { name: "Fehlerquote (%)", value: 2.5, direction: "lower_better", dimension: "P", thresholds: [1, 5, 10] },
+        { name: "Bestellabwicklungszeit (Std)", value: 18, direction: "lower_better", dimension: "P", thresholds: [8, 24, 48] },
+        { name: "Durchsatz (Transaktionen/Std)", value: 450, direction: "higher_better", dimension: "P", thresholds: [600, 300, 100] },
+        { name: "Prozessstandardisierungsgrad (%)", value: 75, direction: "higher_better", dimension: "P", thresholds: [90, 60, 30] },
+        { name: "Bearbeitungszeit Ticket (Std)", value: 6, direction: "lower_better", dimension: "P", thresholds: [2, 12, 48] },
+        { name: "Qualitätskosten (% vom Umsatz)", value: 3.2, direction: "lower_better", dimension: "P", thresholds: [1, 5, 10] },
+        { name: "Durchlauf-Effizienz (%)", value: 88, direction: "higher_better", dimension: "P", thresholds: [95, 80, 60] },
+        { name: "Nachbearbeitungsrate (%)", value: 8, direction: "lower_better", dimension: "P", thresholds: [3, 10, 20] },
+        { name: "Prozessautomatisierung (%)", value: 65, direction: "higher_better", dimension: "P", thresholds: [80, 50, 25] },
+        { name: "Durchsatz-Optimierung (%)", value: 72, direction: "higher_better", dimension: "P", thresholds: [85, 60, 35] },
+        { name: "Time-to-Market (Monate)", value: 4, direction: "lower_better", dimension: "P", thresholds: [2, 6, 12] },
+        { name: "First-Pass-Yield (%)", value: 94, direction: "higher_better", dimension: "P", thresholds: [98, 90, 80] },
+        { name: "Rejektionsrate (%)", value: 1.5, direction: "lower_better", dimension: "P", thresholds: [0.5, 3, 8] },
+        { name: "Bearbeitungszeit Anfrage (Tage)", value: 3, direction: "lower_better", dimension: "P", thresholds: [1, 5, 10] },
+        { name: "Prozess-Compliance (%)", value: 96, direction: "higher_better", dimension: "P", thresholds: [100, 90, 75] },
+        { name: "Cycle Time Reduction (%)", value: 25, direction: "higher_better", dimension: "P", thresholds: [40, 15, 5] },
+        { name: "Warteschlangenlänge (Avg)", value: 12, direction: "lower_better", dimension: "P", thresholds: [5, 20, 50] },
+        { name: "Prozessdokumentation (%)", value: 85, direction: "higher_better", dimension: "P", thresholds: [100, 70, 40] },
+        { name: "Change-Failure-Rate (%)", value: 8, direction: "lower_better", dimension: "P", thresholds: [5, 15, 30] },
+        { name: "Mean Time to Recovery (Std)", value: 2, direction: "lower_better", dimension: "P", thresholds: [1, 4, 12] },
+        { name: "Bearbeitungszeit Reklamation (Tage)", value: 7, direction: "lower_better", dimension: "P", thresholds: [3, 10, 21] },
+        { name: "Prozess-Ausnahme-Quote (%)", value: 5, direction: "lower_better", dimension: "P", thresholds: [2, 8, 15] },
+        { name: "Durchsatz pro Mitarbeiter", value: 150, direction: "higher_better", dimension: "P", thresholds: [200, 100, 50] },
+        { name: "Prozess-Konsistenz (%)", value: 90, direction: "higher_better", dimension: "P", thresholds: [98, 85, 70] },
+        // Responsibility (R)
+        { name: "Rollenklarheit (%)", value: 88, direction: "higher_better", dimension: "R", thresholds: [95, 80, 60] },
+        { name: "Escalation-Rate (%)", value: 10, direction: "lower_better", dimension: "R", thresholds: [5, 15, 30] },
+        { name: "Verantwortungsübernahme (%)", value: 92, direction: "higher_better", dimension: "R", thresholds: [98, 85, 70] },
+        { name: "Entscheidungszeit (Tage)", value: 3, direction: "lower_better", dimension: "R", thresholds: [1, 5, 14] },
+        { name: "Ownership-Definition (%)", value: 85, direction: "higher_better", dimension: "R", thresholds: [95, 75, 50] },
+        { name: "Übergabe-Effizienz (%)", value: 78, direction: "higher_better", dimension: "R", thresholds: [90, 70, 50] },
+        { name: "Accountability-Score", value: 90, direction: "higher_better", dimension: "R", thresholds: [95, 80, 60] },
+        { name: "Escalations pro Quartal", value: 4, direction: "lower_better", dimension: "R", thresholds: [2, 8, 20] },
+        { name: "Rückfragen pro Aufgabe (%)", value: 15, direction: "lower_better", dimension: "R", thresholds: [5, 20, 40] },
+        { name: "Stakeholder-Engagement (%)", value: 82, direction: "higher_better", dimension: "R", thresholds: [90, 70, 50] },
+        { name: "Genehmigungszeit (Tage)", value: 5, direction: "lower_better", dimension: "R", thresholds: [2, 7, 14] },
+        { name: "Verantwortungsdiffusion (%)", value: 20, direction: "lower_better", dimension: "R", thresholds: [10, 30, 50] },
+        { name: "Kommunikationslücken (%)", value: 12, direction: "lower_better", dimension: "R", thresholds: [5, 15, 30] },
+        { name: "Delegations-Effizienz (%)", value: 75, direction: "higher_better", dimension: "R", thresholds: [90, 65, 40] },
+        { name: "Cross-Functional-Score", value: 68, direction: "higher_better", dimension: "R", thresholds: [85, 60, 35] },
+        { name: "Escalation-Response-Time (Std)", value: 4, direction: "lower_better", dimension: "R", thresholds: [2, 8, 24] },
+        { name: "Verantwortungs-Transparenz (%)", value: 88, direction: "higher_better", dimension: "R", thresholds: [95, 80, 60] },
+        { name: "Mehrdeutige Zuständigkeiten (%)", value: 8, direction: "lower_better", dimension: "R", thresholds: [3, 12, 25] },
+        { name: "Governance-Compliance (%)", value: 95, direction: "higher_better", dimension: "R", thresholds: [100, 90, 75] },
+        { name: "Berichtszeit (Tage)", value: 2, direction: "lower_better", dimension: "R", thresholds: [1, 3, 7] },
+        { name: "Klarheit der Schnittstellen (%)", value: 80, direction: "higher_better", dimension: "R", thresholds: [90, 70, 50] },
+        { name: "Verzögerungen durch Unklarheit (%)", value: 10, direction: "lower_better", dimension: "R", thresholds: [5, 15, 30] },
+        { name: "Engagement-Index", value: 78, direction: "higher_better", dimension: "R", thresholds: [90, 65, 40] },
+        { name: "Verantwortungsübernahme-Quote (%)", value: 92, direction: "higher_better", dimension: "R", thresholds: [98, 85, 70] },
+        { name: "Klärungsbedarf pro Projekt (%)", value: 18, direction: "lower_better", dimension: "R", thresholds: [10, 25, 50] },
+        // Adoption (A)
+        { name: "Schulungsabdeckung (%)", value: 75, direction: "higher_better", dimension: "A", thresholds: [90, 70, 40] },
+        { name: "Tool-Adoption-Rate (%)", value: 68, direction: "higher_better", dimension: "A", thresholds: [85, 55, 30] },
+        { name: "Change-Communication (%)", value: 80, direction: "higher_better", dimension: "A", thresholds: [95, 70, 45] },
+        { name: "User Adoption Neues Tool (%)", value: 62, direction: "higher_better", dimension: "A", thresholds: [80, 50, 25] },
+        { name: "Trainings-Abschlussrate (%)", value: 88, direction: "higher_better", dimension: "A", thresholds: [95, 80, 60] },
+        { name: "Engagement-Score", value: 72, direction: "higher_better", dimension: "A", thresholds: [85, 60, 35] },
+        { name: "Akzeptanz neuer Prozesse (%)", value: 78, direction: "higher_better", dimension: "A", thresholds: [90, 65, 40] },
+        { name: "Nutzungsintensität (%)", value: 65, direction: "higher_better", dimension: "A", thresholds: [80, 50, 25] },
+        { name: "Widerstand gegen Veränderung (%)", value: 15, direction: "lower_better", dimension: "A", thresholds: [5, 20, 40] },
+        { name: "Schulungseffektivität (%)", value: 82, direction: "higher_better", dimension: "A", thresholds: [90, 70, 50] },
+        { name: "User-Satisfaction-Score", value: 4.2, direction: "higher_better", dimension: "A", thresholds: [4.5, 3.5, 2.5] },
+        { name: "Change-Bereitschaft (%)", value: 75, direction: "higher_better", dimension: "A", thresholds: [90, 60, 35] },
+        { name: "Feature-Usage-Rate (%)", value: 58, direction: "higher_better", dimension: "A", thresholds: [75, 45, 20] },
+        { name: "Support-Ticket-Reduktion (%)", value: 30, direction: "higher_better", dimension: "A", thresholds: [50, 20, 5] },
+        { name: "Kommunikationsreichweite (%)", value: 90, direction: "higher_better", dimension: "A", thresholds: [98, 85, 65] },
+        { name: "Adoption-Geschwindigkeit (Monate)", value: 3, direction: "lower_better", dimension: "A", thresholds: [1, 4, 8] },
+        { name: "Feedback-Response-Rate (%)", value: 85, direction: "higher_better", dimension: "A", thresholds: [95, 75, 50] },
+        { name: "Champion-Netzwerk-Größe", value: 12, direction: "higher_better", dimension: "A", thresholds: [20, 8, 3] },
+        { name: "Schulungsbedarf-Erfüllung (%)", value: 78, direction: "higher_better", dimension: "A", thresholds: [90, 65, 40] },
+        { name: "Tool-Matrix-Nutzung (%)", value: 55, direction: "higher_better", dimension: "A", thresholds: [75, 40, 20] },
+        { name: "Projektunterstützung (%)", value: 88, direction: "higher_better", dimension: "A", thresholds: [95, 80, 60] },
+        { name: "User-Enablement-Index", value: 70, direction: "higher_better", dimension: "A", thresholds: [85, 55, 30] },
+        { name: "Kommunikationsfrequenz (pro Woche)", value: 3, direction: "higher_better", dimension: "A", thresholds: [5, 2, 1] },
+        { name: "Adoption-Barrier-Score", value: 25, direction: "lower_better", dimension: "A", thresholds: [10, 30, 60] },
+        { name: "Net Promoter Score (NPS)", value: 45, direction: "higher_better", dimension: "A", thresholds: [60, 30, 10] }
+    ],
+    en: [
+        // Technology (T)
+        { name: "System Availability (%)", value: 99.5, direction: "higher_better", dimension: "T", thresholds: [99.9, 99.0, 98.0] },
+        { name: "API Response Time (ms)", value: 120, direction: "lower_better", dimension: "T", thresholds: [50, 200, 500] },
+        { name: "Automation Rate (%)", value: 72, direction: "higher_better", dimension: "T", thresholds: [80, 60, 40] },
+        { name: "Server Downtime (Min/Month)", value: 15, direction: "lower_better", dimension: "T", thresholds: [5, 30, 120] },
+        { name: "Backup Success Rate (%)", value: 99.2, direction: "higher_better", dimension: "T", thresholds: [100, 99, 95] },
+        { name: "Network Latency (ms)", value: 25, direction: "lower_better", dimension: "T", thresholds: [10, 50, 100] },
+        { name: "Software Updates per Quarter", value: 4, direction: "higher_better", dimension: "T", thresholds: [6, 4, 2] },
+        { name: "IT Security Incidents per Year", value: 2, direction: "lower_better", dimension: "T", thresholds: [0, 5, 15] },
+        { name: "Cloud Migration Progress (%)", value: 65, direction: "higher_better", dimension: "T", thresholds: [80, 50, 25] },
+        { name: "Tech Debt Days", value: 45, direction: "lower_better", dimension: "T", thresholds: [10, 30, 90] },
+        { name: "Database Performance (Queries/sec)", value: 5000, direction: "higher_better", dimension: "T", thresholds: [8000, 3000, 1000] },
+        { name: "Cybersecurity Score", value: 85, direction: "higher_better", dimension: "T", thresholds: [90, 70, 50] },
+        { name: "Infrastructure Cost per User ($)", value: 45, direction: "lower_better", dimension: "T", thresholds: [20, 50, 100] },
+        { name: "System Integration Level (%)", value: 78, direction: "higher_better", dimension: "T", thresholds: [90, 70, 50] },
+        { name: "Recovery Time Objective (Min)", value: 30, direction: "lower_better", dimension: "T", thresholds: [15, 60, 240] },
+        { name: "Test Coverage (%)", value: 82, direction: "higher_better", dimension: "T", thresholds: [90, 70, 50] },
+        { name: "Deployment Frequency (per Week)", value: 5, direction: "higher_better", dimension: "T", thresholds: [7, 3, 1] },
+        { name: "Technical Documentation (%)", value: 70, direction: "higher_better", dimension: "T", thresholds: [90, 60, 30] },
+        { name: "API Usage (Calls/Day)", value: 50000, direction: "higher_better", dimension: "T", thresholds: [100000, 20000, 5000] },
+        { name: "System Age (Years)", value: 3, direction: "lower_better", dimension: "T", thresholds: [2, 5, 10] },
+        { name: "Load Balance Efficiency (%)", value: 92, direction: "higher_better", dimension: "T", thresholds: [98, 85, 70] },
+        { name: "Data Backup Frequency (Hours)", value: 4, direction: "lower_better", dimension: "T", thresholds: [1, 6, 24] },
+        { name: "Virtualization Level (%)", value: 88, direction: "higher_better", dimension: "T", thresholds: [95, 75, 50] },
+        { name: "Monitoring Coverage (%)", value: 95, direction: "higher_better", dimension: "T", thresholds: [100, 80, 60] },
+        { name: "SSL Certificate Validity (Days)", value: 180, direction: "higher_better", dimension: "T", thresholds: [365, 90, 30] },
+        // Process (P)
+        { name: "Process Lead Time (Days)", value: 5, direction: "lower_better", dimension: "P", thresholds: [2, 7, 14] },
+        { name: "Error Rate (%)", value: 2.5, direction: "lower_better", dimension: "P", thresholds: [1, 5, 10] },
+        { name: "Order Processing Time (Hrs)", value: 18, direction: "lower_better", dimension: "P", thresholds: [8, 24, 48] },
+        { name: "Throughput (Transactions/Hr)", value: 450, direction: "higher_better", dimension: "P", thresholds: [600, 300, 100] },
+        { name: "Process Standardization Level (%)", value: 75, direction: "higher_better", dimension: "P", thresholds: [90, 60, 30] },
+        { name: "Ticket Processing Time (Hrs)", value: 6, direction: "lower_better", dimension: "P", thresholds: [2, 12, 48] },
+        { name: "Quality Costs (% of Revenue)", value: 3.2, direction: "lower_better", dimension: "P", thresholds: [1, 5, 10] },
+        { name: "Throughput Efficiency (%)", value: 88, direction: "higher_better", dimension: "P", thresholds: [95, 80, 60] },
+        { name: "Rework Rate (%)", value: 8, direction: "lower_better", dimension: "P", thresholds: [3, 10, 20] },
+        { name: "Process Automation (%)", value: 65, direction: "higher_better", dimension: "P", thresholds: [80, 50, 25] },
+        { name: "Throughput Optimization (%)", value: 72, direction: "higher_better", dimension: "P", thresholds: [85, 60, 35] },
+        { name: "Time-to-Market (Months)", value: 4, direction: "lower_better", dimension: "P", thresholds: [2, 6, 12] },
+        { name: "First Pass Yield (%)", value: 94, direction: "higher_better", dimension: "P", thresholds: [98, 90, 80] },
+        { name: "Rejection Rate (%)", value: 1.5, direction: "lower_better", dimension: "P", thresholds: [0.5, 3, 8] },
+        { name: "Request Processing Time (Days)", value: 3, direction: "lower_better", dimension: "P", thresholds: [1, 5, 10] },
+        { name: "Process Compliance (%)", value: 96, direction: "higher_better", dimension: "P", thresholds: [100, 90, 75] },
+        { name: "Cycle Time Reduction (%)", value: 25, direction: "higher_better", dimension: "P", thresholds: [40, 15, 5] },
+        { name: "Queue Length (Avg)", value: 12, direction: "lower_better", dimension: "P", thresholds: [5, 20, 50] },
+        { name: "Process Documentation (%)", value: 85, direction: "higher_better", dimension: "P", thresholds: [100, 70, 40] },
+        { name: "Change Failure Rate (%)", value: 8, direction: "lower_better", dimension: "P", thresholds: [5, 15, 30] },
+        { name: "Mean Time to Recovery (Hrs)", value: 2, direction: "lower_better", dimension: "P", thresholds: [1, 4, 12] },
+        { name: "Complaint Processing Time (Days)", value: 7, direction: "lower_better", dimension: "P", thresholds: [3, 10, 21] },
+        { name: "Process Exception Rate (%)", value: 5, direction: "lower_better", dimension: "P", thresholds: [2, 8, 15] },
+        { name: "Throughput per Employee", value: 150, direction: "higher_better", dimension: "P", thresholds: [200, 100, 50] },
+        { name: "Process Consistency (%)", value: 90, direction: "higher_better", dimension: "P", thresholds: [98, 85, 70] },
+        // Responsibility (R)
+        { name: "Role Clarity (%)", value: 88, direction: "higher_better", dimension: "R", thresholds: [95, 80, 60] },
+        { name: "Escalation Rate (%)", value: 10, direction: "lower_better", dimension: "R", thresholds: [5, 15, 30] },
+        { name: "Responsibility Acceptance (%)", value: 92, direction: "higher_better", dimension: "R", thresholds: [98, 85, 70] },
+        { name: "Decision Time (Days)", value: 3, direction: "lower_better", dimension: "R", thresholds: [1, 5, 14] },
+        { name: "Ownership Definition (%)", value: 85, direction: "higher_better", dimension: "R", thresholds: [95, 75, 50] },
+        { name: "Handover Efficiency (%)", value: 78, direction: "higher_better", dimension: "R", thresholds: [90, 70, 50] },
+        { name: "Accountability Score", value: 90, direction: "higher_better", dimension: "R", thresholds: [95, 80, 60] },
+        { name: "Escalations per Quarter", value: 4, direction: "lower_better", dimension: "R", thresholds: [2, 8, 20] },
+        { name: "Questions per Task (%)", value: 15, direction: "lower_better", dimension: "R", thresholds: [5, 20, 40] },
+        { name: "Stakeholder Engagement (%)", value: 82, direction: "higher_better", dimension: "R", thresholds: [90, 70, 50] },
+        { name: "Approval Time (Days)", value: 5, direction: "lower_better", dimension: "R", thresholds: [2, 7, 14] },
+        { name: "Responsibility Diffusion (%)", value: 20, direction: "lower_better", dimension: "R", thresholds: [10, 30, 50] },
+        { name: "Communication Gaps (%)", value: 12, direction: "lower_better", dimension: "R", thresholds: [5, 15, 30] },
+        { name: "Delegation Efficiency (%)", value: 75, direction: "higher_better", dimension: "R", thresholds: [90, 65, 40] },
+        { name: "Cross-Functional Score", value: 68, direction: "higher_better", dimension: "R", thresholds: [85, 60, 35] },
+        { name: "Escalation Response Time (Hrs)", value: 4, direction: "lower_better", dimension: "R", thresholds: [2, 8, 24] },
+        { name: "Responsibility Transparency (%)", value: 88, direction: "higher_better", dimension: "R", thresholds: [95, 80, 60] },
+        { name: "Ambiguous Responsibilities (%)", value: 8, direction: "lower_better", dimension: "R", thresholds: [3, 12, 25] },
+        { name: "Governance Compliance (%)", value: 95, direction: "higher_better", dimension: "R", thresholds: [100, 90, 75] },
+        { name: "Reporting Time (Days)", value: 2, direction: "lower_better", dimension: "R", thresholds: [1, 3, 7] },
+        { name: "Interface Clarity (%)", value: 80, direction: "higher_better", dimension: "R", thresholds: [90, 70, 50] },
+        { name: "Delays due to Unclarity (%)", value: 10, direction: "lower_better", dimension: "R", thresholds: [5, 15, 30] },
+        { name: "Engagement Index", value: 78, direction: "higher_better", dimension: "R", thresholds: [90, 65, 40] },
+        { name: "Responsibility Acceptance Rate (%)", value: 92, direction: "higher_better", dimension: "R", thresholds: [98, 85, 70] },
+        { name: "Clarification Needs per Project (%)", value: 18, direction: "lower_better", dimension: "R", thresholds: [10, 25, 50] },
+        // Adoption (A)
+        { name: "Training Coverage (%)", value: 75, direction: "higher_better", dimension: "A", thresholds: [90, 70, 40] },
+        { name: "Tool Adoption Rate (%)", value: 68, direction: "higher_better", dimension: "A", thresholds: [85, 55, 30] },
+        { name: "Change Communication (%)", value: 80, direction: "higher_better", dimension: "A", thresholds: [95, 70, 45] },
+        { name: "User Adoption New Tool (%)", value: 62, direction: "higher_better", dimension: "A", thresholds: [80, 50, 25] },
+        { name: "Training Completion Rate (%)", value: 88, direction: "higher_better", dimension: "A", thresholds: [95, 80, 60] },
+        { name: "Engagement Score", value: 72, direction: "higher_better", dimension: "A", thresholds: [85, 60, 35] },
+        { name: "New Process Acceptance (%)", value: 78, direction: "higher_better", dimension: "A", thresholds: [90, 65, 40] },
+        { name: "Usage Intensity (%)", value: 65, direction: "higher_better", dimension: "A", thresholds: [80, 50, 25] },
+        { name: "Resistance to Change (%)", value: 15, direction: "lower_better", dimension: "A", thresholds: [5, 20, 40] },
+        { name: "Training Effectiveness (%)", value: 82, direction: "higher_better", dimension: "A", thresholds: [90, 70, 50] },
+        { name: "User Satisfaction Score", value: 4.2, direction: "higher_better", dimension: "A", thresholds: [4.5, 3.5, 2.5] },
+        { name: "Change Readiness (%)", value: 75, direction: "higher_better", dimension: "A", thresholds: [90, 60, 35] },
+        { name: "Feature Usage Rate (%)", value: 58, direction: "higher_better", dimension: "A", thresholds: [75, 45, 20] },
+        { name: "Support Ticket Reduction (%)", value: 30, direction: "higher_better", dimension: "A", thresholds: [50, 20, 5] },
+        { name: "Communication Reach (%)", value: 90, direction: "higher_better", dimension: "A", thresholds: [98, 85, 65] },
+        { name: "Adoption Speed (Months)", value: 3, direction: "lower_better", dimension: "A", thresholds: [1, 4, 8] },
+        { name: "Feedback Response Rate (%)", value: 85, direction: "higher_better", dimension: "A", thresholds: [95, 75, 50] },
+        { name: "Champion Network Size", value: 12, direction: "higher_better", dimension: "A", thresholds: [20, 8, 3] },
+        { name: "Training Needs Fulfillment (%)", value: 78, direction: "higher_better", dimension: "A", thresholds: [90, 65, 40] },
+        { name: "Tool Matrix Usage (%)", value: 55, direction: "higher_better", dimension: "A", thresholds: [75, 40, 20] },
+        { name: "Project Support (%)", value: 88, direction: "higher_better", dimension: "A", thresholds: [95, 80, 60] },
+        { name: "User Enablement Index", value: 70, direction: "higher_better", dimension: "A", thresholds: [85, 55, 30] },
+        { name: "Communication Frequency (per Week)", value: 3, direction: "higher_better", dimension: "A", thresholds: [5, 2, 1] },
+        { name: "Adoption Barrier Score", value: 25, direction: "lower_better", dimension: "A", thresholds: [10, 30, 60] },
+        { name: "Net Promoter Score (NPS)", value: 45, direction: "higher_better", dimension: "A", thresholds: [60, 30, 10] }
+    ]
+};
+
 document.getElementById("fillTestData").addEventListener("click", function () {
     const isGerman = document.documentElement.lang === "de";
+    const lang = isGerman ? "de" : "en";
     
-    const sampleKPIs = [
-        { name: "Reaktionszeit Support-Ticket (Std)", value: 4.5, direction: "lower_better", dimension: "P", thresholds: [2, 6, 12] },
-        { name: "API-Uptime (%)", value: 99.7, direction: "higher_better", dimension: "T", thresholds: [99.9, 99.0, 98.0] },
-        { name: "Escalation-Rate (%)", value: 12, direction: "lower_better", dimension: "R", thresholds: [5, 15, 25] },
-        { name: "User Adoption Rate Neues Tool (%)", value: 58, direction: "higher_better", dimension: "A", thresholds: [80, 50, 30] },
-    ];
+    // Shuffle and pick 4 random KPIs based on language
+    const kpiPool = allSampleKPIs[lang];
+    const shuffled = [...kpiPool].sort(() => Math.random() - 0.5);
+    const sampleKPIs = shuffled.slice(0, 4);
 
     const names = document.getElementsByName("kpi_name");
     const values = document.getElementsByName("kpi_value");
@@ -173,6 +428,8 @@ document.getElementById("fillTestData").addEventListener("click", function () {
         threshold3s[i].value = sampleKPIs[i].thresholds[2];
     }
 
+    updateKpiPreview();
+
     const loadedText = isGerman ? "✓ Geladen" : "✓ Loaded";
     this.textContent = loadedText;
     this.style.borderColor = "rgba(125, 211, 252, 0.45)";
@@ -186,18 +443,75 @@ document.getElementById("fillTestData").addEventListener("click", function () {
 });
 
 document.addEventListener("DOMContentLoaded", function() {
-    // Show loading animation immediately
-    const overlay = document.getElementById("loadingOverlay");
-    if (overlay) {
-        overlay.style.display = "flex";
-    }
+    // Pre-fill form with KPIs from sessionStorage (from KI Mapping)
+    console.log("sessionStorage raw:", sessionStorage.getItem("prefillKPIs"));
+    const storedKPIs = JSON.parse(sessionStorage.getItem("prefillKPIs") || "[]");
+    console.log("Parsed storedKPIs:", JSON.stringify(storedKPIs));
     
-    // Hide loading after a short delay
-    setTimeout(function() {
-        if (overlay) {
-            overlay.style.display = "none";
-        }
-    }, 1500);
+    const names = document.getElementsByName("kpi_name");
+    const values = document.getElementsByName("kpi_value");
+    const directions = document.getElementsByName("kpi_direction");
+    const dimensions = document.getElementsByName("kpi_dimension");
+    const threshold1s = document.getElementsByName("threshold_1");
+    const threshold2s = document.getElementsByName("threshold_2");
+    const threshold3s = document.getElementsByName("threshold_3");
+    
+    console.log("Form elements found:", {
+        names: names.length,
+        values: values.length,
+        directions: directions.length,
+        dimensions: dimensions.length
+    });
+    
+    if (storedKPIs.length > 0) {
+        storedKPIs.forEach((kpi, i) => {
+            console.log("Processing KPI", i, ":", kpi.name);
+            if (i < names.length && kpi.name) {
+                console.log("Setting name[", i, "] =", kpi.name);
+                names[i].value = kpi.name;
+                
+                if (values[i]) {
+                    console.log("Setting value[", i, "] =", kpi.value || "");
+                    values[i].value = kpi.value || "";
+                }
+                
+                // Set direction
+                if (directions[i]) {
+                    for (let j = 0; j < directions[i].options.length; j++) {
+                        if (directions[i].options[j].value === (kpi.direction || "higher_better")) {
+                            directions[i].selectedIndex = j;
+                            console.log("Set direction[", i, "] to", kpi.direction);
+                            break;
+                        }
+                    }
+                }
+                
+                // Set dimension
+                if (dimensions[i]) {
+                    for (let j = 0; j < dimensions[i].options.length; j++) {
+                        if (dimensions[i].options[j].value === (kpi.dimension || "T")) {
+                            dimensions[i].selectedIndex = j;
+                            console.log("Set dimension[", i, "] to", kpi.dimension);
+                            break;
+                        }
+                    }
+                }
+                
+                // Set thresholds
+                if (kpi.thresholds && threshold1s[i] && threshold2s[i] && threshold3s[i]) {
+                    threshold1s[i].value = kpi.thresholds[0] || "";
+                    threshold2s[i].value = kpi.thresholds[1] || "";
+                    threshold3s[i].value = kpi.thresholds[2] || "";
+                }
+            } else {
+                console.log("Skipping KPI", i, "- no name or out of bounds");
+            }
+        });
+        
+        // Clear prefill after loading
+        sessionStorage.removeItem("prefillKPIs");
+        updateKpiPreview();
+    }
     
     document.getElementById("transferToAnalysis")?.addEventListener("click", function () {
         const isGerman = document.documentElement.lang === "de";
@@ -209,18 +523,26 @@ document.addEventListener("DOMContentLoaded", function() {
         const threshold2s = document.getElementsByName("threshold_2");
         const threshold3s = document.getElementsByName("threshold_3");
 
+        console.log("Found kpiNames:", kpiNames.length);
         const kpis = [];
         for (let i = 0; i < kpiNames.length; i++) {
-            if (kpiNames[i].value.trim()) {
+            const nameVal = kpiNames[i].value.trim();
+            console.log("KPI", i, "name:", nameVal);
+            if (nameVal) {
                 kpis.push({
-                    name: kpiNames[i].value,
-                    value: kpiValues[i].value,
-                    direction: kpiDirections[i].value,
-                    dimension: kpiDimensions[i].value,
-                    thresholds: [threshold1s[i].value, threshold2s[i].value, threshold3s[i].value]
+                    name: nameVal,
+                    value: kpiValues[i]?.value || "",
+                    direction: kpiDirections[i]?.value || "higher_better",
+                    dimension: kpiDimensions[i]?.value || "T",
+                    thresholds: [
+                        threshold1s[i]?.value || "",
+                        threshold2s[i]?.value || "",
+                        threshold3s[i]?.value || ""
+                    ]
                 });
             }
         }
+        console.log("Collected KPIs:", kpis);
 
         if (kpis.length === 0) {
             alert(isGerman ? "Bitte fülle mindestens ein KPI aus." : "Please fill in at least one KPI.");
@@ -232,6 +554,56 @@ document.addEventListener("DOMContentLoaded", function() {
         window.location.href = "/?lang=" + lang + "&showKpis=1";
     });
 });
+    
+    // Update KPI preview
+    function updateKpiPreview() {
+        const names = document.getElementsByName("kpi_name");
+        const values = document.getElementsByName("kpi_value");
+        const directions = document.getElementsByName("kpi_direction");
+        const dimensions = document.getElementsByName("kpi_dimension");
+        
+        const preview = document.getElementById("kpiPreview");
+        const previewList = document.getElementById("kpiPreviewList");
+        
+        const filledKPIs = [];
+        for (let i = 0; i < names.length; i++) {
+            if (names[i].value.trim()) {
+                filledKPIs.push({
+                    name: names[i].value.trim(),
+                    value: values[i]?.value || "-",
+                    direction: directions[i]?.value === "lower_better" ? "↓" : "↑",
+                    dimension: dimensions[i]?.value || "T"
+                });
+            }
+        }
+        
+        if (filledKPIs.length === 0) {
+            preview.style.display = "none";
+            return;
+        }
+        
+        preview.style.display = "block";
+        previewList.innerHTML = filledKPIs.map(kpi => `
+            <div class="kpi-preview-item">
+                <div class="kpi-preview-name">${kpi.name}</div>
+                <div class="kpi-preview-meta">
+                    <span>Wert: ${kpi.value}</span>
+                    <span>${kpi.direction} ist besser</span>
+                    <span class="kpi-preview-dim">${kpi.dimension}</span>
+                </div>
+            </div>
+        `).join("");
+    }
+    
+    // Listen to input changes
+    const allInputs = document.querySelectorAll("input[name^='kpi_'], select[name^='kpi_']");
+    allInputs.forEach(input => {
+        input.addEventListener("input", updateKpiPreview);
+        input.addEventListener("change", updateKpiPreview);
+    });
+    
+    // Initial preview update
+    updateKpiPreview();
 </script>
 
 {% if indicators %}
@@ -288,23 +660,6 @@ document.addEventListener("DOMContentLoaded", function() {
             <div>{{ t_page.adoption }}</div>
             <div class="metric-value">{{ "%.1f"|format(result["dimension_scores"]["A"]) }}</div>
         </div>
-    </div>
-
-    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08);">
-        <p style="font-size: 13px; color: #8fa1c2; margin-bottom: 12px;">
-            {{ "Diese KPIs zur Analyse hinzufügen?" if (lang == "de") else "Transfer these KPIs to the Analysis page?" }}
-        </p>
-        <button type="button" id="transferToAnalysis"
-                style="background: rgba(125, 211, 252, 0.12);
-                       border: 1px solid rgba(125, 211, 252, 0.25);
-                       color: var(--primary);
-                       padding: 10px 18px;
-                       border-radius: 8px;
-                       cursor: pointer;
-                       font-weight: 600;
-                       font-size: 13px;">
-            {{ "Zur Analyse übertragen →" if (lang == "de") else "Transfer to Analysis →" }}
-        </button>
     </div>
 </div>
 {% endif %}

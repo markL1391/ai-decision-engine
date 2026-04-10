@@ -48,7 +48,6 @@
         <div class="node node-1"></div>
         <div class="node node-2"></div>
         <div class="node node-3"></div>
-        <div class="node node-center"></div>
     </div>
     <div class="loading-box">
         <div class="loading-title">{{ "KI deckt verborgene Systembeschränkungen auf" if (lang == "de") else "AI is revealing hidden system constraints" }}</div>
@@ -79,6 +78,7 @@
         <input id="kpi_name"
                type="text"
                name="kpi_name"
+               value="{{ kpi_name_value if kpi_name_value else '' }}"
                placeholder="{{ t_page.placeholder }}"
                required>
 
@@ -177,18 +177,7 @@ document.getElementById("randomKPI")?.addEventListener("click", function() {
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    // Show loading animation immediately
     const overlay = document.getElementById("loadingOverlay");
-    if (overlay) {
-        overlay.style.display = "flex";
-    }
-    
-    // Hide loading after a short delay
-    setTimeout(function() {
-        if (overlay) {
-            overlay.style.display = "none";
-        }
-    }, 1500);
     
     document.getElementById("addToCustomKpis")?.addEventListener("click", function() {
         const isGerman = document.documentElement.lang === "de";
@@ -211,9 +200,12 @@ document.addEventListener("DOMContentLoaded", function() {
             reason: reason
         };
         
-        let existing = JSON.parse(sessionStorage.getItem("customKPIs") || "[]");
+        let existing = JSON.parse(sessionStorage.getItem("prefillKPIs") || "[]");
         existing.push(kpi);
-        sessionStorage.setItem("customKPIs", JSON.stringify(existing));
+        console.log("Saving KPI:", kpi);
+        console.log("All KPIs:", existing);
+        sessionStorage.setItem("prefillKPIs", JSON.stringify(existing));
+        console.log("sessionStorage prefillKPIs:", sessionStorage.getItem("prefillKPIs"));
         
         const msg = isGerman ? "KPI wurde hinzugefügt!" : "KPI added!";
         const btn = document.getElementById("addToCustomKpis");
@@ -221,7 +213,9 @@ document.addEventListener("DOMContentLoaded", function() {
         btn.style.background = "rgba(125, 211, 252, 0.25)";
         
         setTimeout(() => {
-            window.location.href = "/custom-kpi-demo?lang=" + (isGerman ? "de" : "en");
+            const urlParams = new URLSearchParams(window.location.search);
+            const lang = urlParams.get("lang") || "de";
+            window.location.href = "/custom-kpi-demo?lang=" + lang;
         }, 800);
     });
 });

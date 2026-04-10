@@ -52,12 +52,9 @@
 } %}
 
 <!-- Loading Overlay -->
-<div id="loadingOverlay" style="display:none; position:fixed; inset:0; width:100vw; height:100vh; background:url('/static/images/network-bg.png') center center / cover no-repeat, radial-gradient(ellipse at center, rgba(15,23,42,0.7) 0%, rgba(2,6,23,0.85) 100%); backdrop-filter:blur(4px); align-items:center; justify-content:center; flex-direction:column; z-index:99999;">
+<div id="loadingOverlay" class="loading-overlay">
     <div class="loading-network">
         <div class="node node-1"></div>
-        <div class="node node-2"></div>
-        <div class="node node-3"></div>
-        <div class="node node-center"></div>
     </div>
     <div class="loading-box">
         <div class="loading-title">{{ "KI deckt verborgene Systembeschränkungen auf" if (lang == "de") else "AI is revealing hidden system constraints" }}</div>
@@ -534,26 +531,10 @@ function normalizeValue(value) {
 document.addEventListener("DOMContentLoaded", function() {
     console.log("DOM ready, initializing...");
     
-    // Show loading animation immediately
     const overlay = document.getElementById("loadingOverlay");
-    if (overlay) {
-        overlay.style.display = "flex";
-    }
-    
-    // Hide loading after a short delay
-    setTimeout(function() {
-        if (overlay) {
-            overlay.style.display = "none";
-        }
-    }, 1500);
     
     // Initialize scenarios first
     populateScenarios();
-    
-    document.getElementById("scenarioSelect").addEventListener("change", function() {
-        selectedScenario = scenarios[this.value];
-        displayScenarioData();
-    });
     
     document.getElementById("scenarioSelect").addEventListener("change", function() {
         selectedScenario = scenarios[this.value];
@@ -564,7 +545,7 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log("Button clicked");
         
         if (!selectedScenario) {
-            alert("Bitte wählen Sie ein Unternehmen aus." if document.documentElement.lang === "de" else "Please select a company.");
+            alert(document.documentElement.lang === "de" ? "Bitte wählen Sie ein Unternehmen aus." : "Please select a company.");
             return;
         }
         
@@ -572,7 +553,8 @@ document.addEventListener("DOMContentLoaded", function() {
         const resultsCard = document.getElementById("resultsCard");
         
         // Ensure overlay is shown and results hidden
-        overlay.style.display = "flex";
+        overlay.classList.add("active");
+        document.body.classList.add("loading-active");
         document.body.style.overflow = "hidden";
         if (resultsCard) {
             resultsCard.style.display = "none";
@@ -588,7 +570,7 @@ document.addEventListener("DOMContentLoaded", function() {
         const timeoutId = setTimeout(() => {
             console.log("Request timeout - aborting");
             controller.abort();
-        }, 60000); // 60 second timeout
+        }, 180000); // 180 second timeout (3 minutes)
         
         try {
             const payload = {
@@ -651,14 +633,15 @@ document.addEventListener("DOMContentLoaded", function() {
             
             let errorMessage = "Analyse fehlgeschlagen: ";
             if (err.name === 'AbortError') {
-                errorMessage += "Zeitüberschreitung - die KI-Antwort dauert zu lange.";
+                errorMessage = "Zeitüberschreitung - bitte OPENAI_API_KEY prüfen oder später erneut versuchen.";
             } else {
                 errorMessage += err.message;
             }
             alert(errorMessage);
         } finally {
             // Always hide loading overlay
-            overlay.style.display = "none";
+            overlay.classList.remove("active");
+            document.body.classList.remove("loading-active");
             document.body.style.overflow = "";
             console.log("Loading overlay hidden");
         }
