@@ -1,6 +1,10 @@
-# AI Explainable Decision Engine (AXION)
+# AXION — Explainable AI-supported Decision Engine
 
-An explainable AI-supported decision framework that transforms raw metrics into structural indicators, evaluates system capability deterministically, and explains structural limitations using LLMs and RAG.
+
+AXION is an explainable AI-supported decision engine designed to analyse operational systems through deterministic scoring models, KPI mapping and AI-generated insights.
+
+The system combines backend architecture, operational analytics and AI-supported decision support to identify structural bottlenecks, evaluate organisational readiness and improve transparency in complex operational environments.
+
 
 ## Tech Stack
 - **Backend**: Flask (Python)
@@ -8,6 +12,18 @@ An explainable AI-supported decision framework that transforms raw metrics into 
 - **Frontend**: HTML/CSS/JavaScript with Jinja2 templates
 - **AI Integration**: OpenAI API (optional, for LLM explanations)
 - **Validation**: Pydantic models
+
+## Architecture Overview
+
+The application follows a modular backend architecture separating routing, business logic, validation, retrieval and AI integration layers.
+
+Core functionality is divided into:
+
+- Flask-based application and routing layer
+- Deterministic scoring and KPI mapping engine 
+- AI-supported explanation and retrieval components 
+- Modular frontend templates using Jinja2 
+- SQLite-based persistence layer
 
 ## Project Structure
 
@@ -161,14 +177,4 @@ The application uses:
 
 ## Current Status
 
-MVP in progress - Core features implemented:
-- [x] Main analysis flow
-- [x] Custom KPI mapping
-- [x] AI KPI suggestion
-- [x] Scenario comparison
-- [x] Industry benchmarking
-- [x] LLM temperature comparison
-- [x] Context-aware chat
-- [x] German/English language support
-- [ ] Production deployment configuration
-- [ ] Unit tests
+Core system architecture and key functionality implemented, including deterministic scoring logic, AI-supported explanations, KPI mapping, benchmarking and scenario comparison.
