@@ -5,6 +5,19 @@ AXION is an explainable AI-supported decision engine designed to analyse operati
 
 The system combines backend architecture, operational analytics and AI-supported decision support to identify structural bottlenecks, evaluate organisational readiness and improve transparency in complex operational environments.
 
+## Application Preview
+
+### Landing Page
+
+![Landing Page](screenshots/landing-page-top.png)
+
+### Analysis Dashboard
+
+![Analysis Dashboard](screenshots/analysis-dashboard.png)
+
+### Scenario Comparison
+
+![Scenario Comparison](screenshots/scenario-comparison.png)
 
 ## Tech Stack
 - **Backend**: Flask (Python)
